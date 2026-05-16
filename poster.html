@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Healthy Lifestyle Poster</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .poster-frame {
+            background: white;
+            border: 8px solid #2ECC71;
+            border-radius: 20px;
+            padding: 0;
+            margin: 2rem auto;
+            max-width: 900px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .poster-header {
+            background: linear-gradient(135deg, #2ECC71, #27AE60);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .poster-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: 2px;
+        }
+        .poster-slogan {
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+            opacity: 0.95;
+        }
+        .poster-body {
+            padding: 2rem;
+        }
+        .poster-tips {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .tip-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 3px solid #ECF0F1;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .tip-card:hover {
+            transform: translateY(-5px);
+            border-color: #2ECC71;
+        }
+        .tip-icon {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+        }
+        .tip-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2C3E50;
+            margin-bottom: 0.5rem;
+        }
+        .tip-text {
+            color: #7F8C8D;
+            font-size: 0.95rem;
+        }
+        .tip-rule {
+            background: #2ECC71;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        .poster-footer {
+            background: #2C3E50;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .poster-cta {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .poster-author {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 1rem;
+        }
+        .stats-row {
+            background: linear-gradient(90deg, #F39C12, #E67E22);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0;
+            border-radius: 12px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number-big {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .stat-label-small {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        @media print {
+            .header, .footer-nav, .container > *:not(.poster-frame) { display: none; }
+            body { background: white; }
+            .poster-frame { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">🌱 Healthy Lifestyle Hub</a>
+            <nav class="nav">
+                <a href="index.html#lessons">📚 Уроки</a>
+                <a href="javascript:window.print()">🖨️ Печать</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2 style="text-align: center; color: #2C3E50;">🎨 Sample Project Poster</h2>
+        <p style="text-align: center; color: #7F8C8D; margin-bottom: 1rem;">Образец итогового проекта по курсу «Healthy Lifestyle Hub»</p>
+
+        <!-- THE POSTER -->
+        <div class="poster-frame">
+            <div class="poster-header">
+                <h1 class="poster-title">🌱 BE HEALTHY, BE HAPPY!</h1>
+                <p class="poster-slogan">7 simple rules for every teenager</p>
+            </div>
+
+            <div class="poster-body">
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-number-big">8h</div>
+                        <div class="stat-label-small">sleep</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number-big">5×</div>
+                        <div class="stat-label-small">fruits/day</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number-big">30min</div>
+                        <div class="stat-label-small">exercise</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number-big">2L</div>
+                        <div class="stat-label-small">water</div>
+                    </div>
+                </div>
+
+                <div class="poster-tips">
+
+                    <div class="tip-card">
+                        <div class="tip-icon">🥗</div>
+                        <div class="tip-title">EAT SMART</div>
+                        <p class="tip-text">5 portions of fruits & vegetables daily. Whole grains, lean protein, healthy fats.</p>
+                        <div class="tip-rule">Eat the rainbow!</div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">💧</div>
+                        <div class="tip-title">DRINK WATER</div>
+                        <p class="tip-text">At least 2 litres a day. Skip the soda — water is the best fuel for your brain.</p>
+                        <div class="tip-rule">Hydrate to feel great!</div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">🏃</div>
+                        <div class="tip-title">MOVE MORE</div>
+                        <p class="tip-text">30 minutes a day. Walk, run, swim, dance — choose what you love.</p>
+                        <div class="tip-rule">Active body = active mind!</div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">😴</div>
+                        <div class="tip-title">SLEEP TIGHT</div>
+                        <p class="tip-text">Teens need 8–9 hours. No phones 30 min before bed!</p>
+                        <div class="tip-rule">Good sleep = good marks!</div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">🚫</div>
+                        <div class="tip-title">SAY NO</div>
+                        <p class="tip-text">No to smoking. No to alcohol. No to too much screen time.</p>
+                        <div class="tip-rule">Your choice matters!</div>
+                    </div>
+
+                    <div class="tip-card">
+                        <div class="tip-icon">💚</div>
+                        <div class="tip-title">STAY POSITIVE</div>
+                        <p class="tip-text">Connect with friends. Talk to family. Find a hobby you love.</p>
+                        <div class="tip-rule">Mental health matters!</div>
+                    </div>
+
+                    <div class="tip-card" style="grid-column: 1 / -1;">
+                        <div class="tip-icon">🎯</div>
+                        <div class="tip-title">START SMALL</div>
+                        <p class="tip-text">You don't need to change everything today. Pick ONE habit and stick with it for 21 days.</p>
+                        <div class="tip-rule">Small steps, big results!</div>
+                    </div>
+
+                </div>
+
+                <div style="text-align: center; margin-top: 2rem; padding: 1.5rem; background: #ECF0F1; border-radius: 12px;">
+                    <p style="font-size: 1.2rem; color: #2C3E50; margin-bottom: 1rem;"><strong>💡 Did you know?</strong></p>
+                    <p style="color: #7F8C8D;">A 15-year-old who develops healthy habits today is <strong>3 times more likely</strong> to live a long, happy life. Your future self will thank you!</p>
+                </div>
+            </div>
+
+            <div class="poster-footer">
+                <p class="poster-cta">🌟 YOUR HEALTH = YOUR FUTURE 🌟</p>
+                <p>Choose smart today!</p>
+                <p class="poster-author">
+                    Created by [Student Name] · Grade 9 · 2025<br>
+                    «Healthy Lifestyle Hub» Project · IT-майстар 5.1
+                </p>
+            </div>
+        </div>
+
+        <section style="text-align: center;">
+            <h2>💡 О постере</h2>
+            <p>Этот постер интегрирует материал всех 10 уроков курса:</p>
+            <ul style="list-style: none; padding: 0;">
+                <li>🥗 Питание (Уроки 2–3)</li>
+                <li>🏃 Физическая активность (Урок 4)</li>
+                <li>🚫 Вредные привычки (Урок 5)</li>
+                <li>🩺 Здоровье (Урок 6)</li>
+                <li>😴 Сон (Урок 7)</li>
+                <li>💚 Психическое здоровье (Урок 1)</li>
+                <li>🎯 Долгосрочные привычки (Урок 9)</li>
+            </ul>
+
+            <p style="margin-top: 1rem;">
+                <a href="javascript:window.print()" class="btn">🖨️ Распечатать постер</a>
+                <a href="lessons/lesson-10.html" class="btn btn-secondary">🎤 К защите</a>
+            </p>
+        </section>
+
+        <nav class="footer-nav">
+            <a href="lessons/lesson-08.html">⬅️ Урок 8</a>
+            <a href="index.html">🏠 Главная</a>
+            <a href="defense-speech.html">🎤 Сценарий защиты</a>
+        </nav>
+    </div>
+</body>
+</html>

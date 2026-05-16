@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 Healthy Lifestyle Hub — Курс английского для 9 класса</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="logo">🌱 Healthy Lifestyle Hub</a>
+            <nav class="nav">
+                <a href="#about">О курсе</a>
+                <a href="#lessons">Уроки</a>
+                <a href="#tests">Тесты</a>
+                <a href="#resources">Ресурсы</a>
+                <a href="poster.html">🎨 Постер</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>🌱 Healthy Lifestyle Hub</h1>
+            <p class="subtitle">Цифровой учебный курс английского языка для 9 класса</p>
+            <p style="color: #7F8C8D; margin: 1rem 0;">Республиканский конкурс «IT-майстар» · Номинация 5.1</p>
+
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">10</div>
+                    <div class="stat-label">уроков</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">112</div>
+                    <div class="stat-label">слов</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">200</div>
+                    <div class="stat-label">Health Points</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">A2-B1</div>
+                    <div class="stat-label">уровень CEFR</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <a href="lessons/lesson-01.html" class="btn">🚀 Начать обучение</a>
+                <a href="assessment/diagnostic-test.html" class="btn btn-secondary">📊 Пройти диагностику</a>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <section>
+            <h2>📈 Твой прогресс</h2>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%">0/10 уроков (0%)</div>
+            </div>
+            <p style="text-align: center; margin-top: 1rem;">
+                💚 Health Points: <strong id="hp-counter">0</strong> / 200
+                <button class="btn btn-secondary" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.85rem;" onclick="resetProgress()">Сбросить</button>
+            </p>
+        </section>
+
+        <!-- About -->
+        <section id="about">
+            <h2>📖 О курсе</h2>
+            <p><strong>Healthy Lifestyle Hub</strong> — это цифровой учебный курс английского языка, построенный на материале раздела «A Healthy Lifestyle» учебной программы 9 класса.</p>
+
+            <p>Курс состоит из <strong>10 взаимосвязанных уроков</strong>, каждый из которых включает:</p>
+
+            <div class="grid" style="margin-top: 1.5rem;">
+                <div class="card" style="background: var(--info-bg);">
+                    <div class="card-icon">📚</div>
+                    <h3>Информационный блок</h3>
+                    <p>Теория, словарь, грамматика, опорные конспекты</p>
+                </div>
+                <div class="card" style="background: var(--practice-bg);">
+                    <div class="card-icon">🏋️</div>
+                    <h3>Практический блок</h3>
+                    <p>6 упражнений + интерактивные игры</p>
+                </div>
+                <div class="card" style="background: var(--control-bg);">
+                    <div class="card-icon">📝</div>
+                    <h3>Контрольный блок</h3>
+                    <p>Самопроверка + тест + рефлексия</p>
+                </div>
+            </div>
+
+            <blockquote>
+                💡 Курс разработан для дистанционного и смешанного обучения. Подходит для самостоятельного изучения и работы в классе.
+            </blockquote>
+        </section>
+
+        <!-- Lessons -->
+        <section id="lessons">
+            <h2>📚 10 уроков курса</h2>
+            <div class="grid">
+                <a href="lessons/lesson-01.html" class="card">
+                    <span class="card-number">1</span>
+                    <h3>The Greatest Wealth Is Health</h3>
+                    <p>🟢 Введение: компоненты ЗОЖ</p>
+                    <span class="badge badge-info">Степени сравнения</span>
+                </a>
+                <a href="lessons/lesson-02.html" class="card">
+                    <span class="card-number">2</span>
+                    <h3>You Are What You Eat</h3>
+                    <p>🥗 Пирамида здорового питания</p>
+                    <span class="badge badge-info">Countable/Uncountable</span>
+                </a>
+                <a href="lessons/lesson-03.html" class="card">
+                    <span class="card-number">3</span>
+                    <h3>Smart Food, Junk Food</h3>
+                    <p>⚠️ Здоровая vs вредная еда</p>
+                    <span class="badge badge-info">Сравнения</span>
+                </a>
+                <a href="lessons/lesson-04.html" class="card">
+                    <span class="card-number">4</span>
+                    <h3>Feel Fit</h3>
+                    <p>💪 Физическая активность</p>
+                    <span class="badge badge-info">Степени сравнения наречий</span>
+                </a>
+                <a href="lessons/lesson-05.html" class="card">
+                    <span class="card-number">5</span>
+                    <h3>Say "No" to Addictions</h3>
+                    <p>🚫 Вредные привычки</p>
+                    <span class="badge badge-warning">Midterm test</span>
+                </a>
+                <a href="lessons/lesson-06.html" class="card">
+                    <span class="card-number">6</span>
+                    <h3>I Am in Good Health</h3>
+                    <p>🩺 Болезни и здоровье</p>
+                    <span class="badge badge-info">Модальные глаголы</span>
+                </a>
+                <a href="lessons/lesson-07.html" class="card">
+                    <span class="card-number">7</span>
+                    <h3>Sleep Tight</h3>
+                    <p>😴 Здоровый сон</p>
+                    <span class="badge badge-info">Phrasal verbs «get»</span>
+                </a>
+                <a href="lessons/lesson-08.html" class="card">
+                    <span class="card-number">8</span>
+                    <h3>Healthy Lifestyle Poster</h3>
+                    <p>🎨 Подготовка проекта</p>
+                    <span class="badge badge-info">Imperative</span>
+                </a>
+                <a href="lessons/lesson-09.html" class="card">
+                    <span class="card-number">9</span>
+                    <h3>Steps to Healthy Lifestyle</h3>
+                    <p>🌟 Долголетие</p>
+                    <span class="badge badge-info">Conditional 1</span>
+                </a>
+                <a href="lessons/lesson-10.html" class="card">
+                    <span class="card-number">10</span>
+                    <h3>Project Presentation</h3>
+                    <p>🏆 Защита проекта</p>
+                    <span class="badge badge-danger">Final test</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Tests -->
+        <section id="tests">
+            <h2>📝 Тесты и оценивание</h2>
+            <div class="grid">
+                <a href="assessment/diagnostic-test.html" class="card">
+                    <div class="card-icon">🟦</div>
+                    <h3>Диагностический тест</h3>
+                    <p>20 заданий · перед курсом</p>
+                </a>
+                <a href="assessment/midterm-test.html" class="card">
+                    <div class="card-icon">🟡</div>
+                    <h3>Промежуточный тест</h3>
+                    <p>15 заданий · после урока 5</p>
+                </a>
+                <a href="assessment/final-test.html" class="card">
+                    <div class="card-icon">🟥</div>
+                    <h3>Итоговый тест</h3>
+                    <p>30 заданий · после урока 10</p>
+                </a>
+                <a href="assessment/self-assessment.html" class="card">
+                    <div class="card-icon">📊</div>
+                    <h3>Самооценка</h3>
+                    <p>Чек-лист «I can…»</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Resources -->
+        <section id="resources">
+            <h2>📖 Справочные ресурсы</h2>
+            <div class="grid">
+                <a href="resources/vocabulary.html" class="card">
+                    <div class="card-icon">📖</div>
+                    <h3>Vocabulary Bank</h3>
+                    <p>112 ЛЕ с транскрипцией и примерами</p>
+                </a>
+                <a href="resources/grammar.html" class="card">
+                    <div class="card-icon">📐</div>
+                    <h3>Grammar Reference</h3>
+                    <p>9 грамматических тем</p>
+                </a>
+                <a href="resources/links.html" class="card">
+                    <div class="card-icon">🔗</div>
+                    <h3>Useful Links</h3>
+                    <p>Внешние ресурсы для изучения</p>
+                </a>
+                <a href="poster.html" class="card">
+                    <div class="card-icon">🎨</div>
+                    <h3>Sample Poster</h3>
+                    <p>Образец проектного постера</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Project Info -->
+        <section>
+            <h2>👤 Автор проекта</h2>
+            <p><strong>Учащийся 9 класса</strong> · ГУО «Средняя школа №___ г. ___»</p>
+            <p>Руководитель: учитель английского языка</p>
+            <p>Год: 2025</p>
+
+            <h3>🏆 Соответствие критериям конкурса</h3>
+            <ul>
+                <li>✅ Цикл взаимосвязанных уроков (10 уроков)</li>
+                <li>✅ Продуманная логика и навигация</li>
+                <li>✅ Информационный блок (теория + опорные конспекты)</li>
+                <li>✅ Контрольный блок (диагностические материалы)</li>
+                <li>✅ Соответствие учебной программе 9 класса</li>
+            </ul>
+        </section>
+
+        <footer class="footer">
+            <p>🌱 <strong>Healthy Lifestyle Hub</strong> · 2025</p>
+            <p>Создано для конкурса «IT-майстар», номинация 5.1</p>
+            <blockquote style="margin-top: 1rem;">
+                «Health is the greatest wealth.» — Virgil
+            </blockquote>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
