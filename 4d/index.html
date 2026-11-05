@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Окно в четвёртое измерение</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: full-bleed 3D stage on the left (the "window"), an instrument panel on the right; on phones the panel stacks under the stage. */
+:root{
+  --bg:#F1F3F8; --panel:#FFFFFF; --ink:#141A2B; --muted:#5A6379; --line:#DADFE9; --chip:#EAEDF4;
+  --stage:#E2E6EF; --shadow:rgba(20,26,43,.10);
+  --accent:#6A3BD8; --accent-ink:#FFFFFF; --accent-soft:#EEE8FC;
+  --x:#DE4249; --y:#2A9A64; --z:#2F72EC; --w:#8E54EE;
+  --kata:#2F6FEB; --mid:#B23CCF; --ana:#F07818;
+  --font-display:'Unbounded','Golos Text',system-ui,sans-serif;
+  --font-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0F18; --panel:#10151F; --ink:#E4E8F1; --muted:#8D97AD; --line:#232B3B; --chip:#1A2130;
+    --stage:#070A11; --shadow:rgba(0,0,0,.4);
+    --accent:#A98CFF; --accent-ink:#130B26; --accent-soft:#211A38;
+    --x:#F0626A; --y:#45BA80; --z:#5490F8; --w:#AC80FF;
+    --kata:#3F80F6; --mid:#C65AE2; --ana:#FF8D36;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0F18; --panel:#10151F; --ink:#E4E8F1; --muted:#8D97AD; --line:#232B3B; --chip:#1A2130;
+  --stage:#070A11; --shadow:rgba(0,0,0,.4);
+  --accent:#A98CFF; --accent-ink:#130B26; --accent-soft:#211A38;
+  --x:#F0626A; --y:#45BA80; --z:#5490F8; --w:#AC80FF;
+  --kata:#3F80F6; --mid:#C65AE2; --ana:#FF8D36;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-body);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{flex:none;background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:2}
+.top-inner{display:flex;align-items:center;justify-content:space-between;gap:10px 24px;flex-wrap:wrap;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand svg{flex:none;width:34px;height:34px}
+h1{font:600 16px/1.2 var(--font-display);letter-spacing:-.005em;margin:0;text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--muted);font-size:12.5px;line-height:1.35}
+.tabs{display:flex;gap:2px;padding:3px;background:var(--chip);border-radius:11px;overflow-x:auto;max-width:100%;scrollbar-width:none}
+.tabs button{appearance:none;border:0;background:transparent;color:var(--muted);font-weight:500;font-size:13.5px;line-height:1;padding:9px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px var(--shadow),0 0 0 1px var(--line)}
+
+/* app grid */
+.app{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 396px}
+.stage{position:relative;min-width:0;min-height:0;background:var(--stage);overflow:hidden}
+#gl{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+.panel{overflow-y:auto;background:var(--panel);border-left:1px solid var(--line);min-width:0}
+.panel-inner{display:flex;flex-direction:column;gap:22px;padding-block:20px 36px;padding-left:22px;padding-right:max(22px,env(safe-area-inset-right,0px))}
+
+/* stage overlays */
+.ov{position:absolute;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.ov-tl{top:14px;left:max(14px,env(safe-area-inset-left,0px));max-width:calc(100% - 220px)}
+.glass{background:var(--panel);background:color-mix(in srgb,var(--panel) 84%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px}
+.stage-title{display:flex;flex-direction:column;gap:4px;padding:10px 14px}
+#stageBig{font:600 24px/1.1 var(--font-display);letter-spacing:-.01em}
+#stageSmall{font-size:13.5px;color:var(--muted);max-width:34ch}
+.legend{display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:12px;color:var(--muted)}
+.leg-bar{width:110px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--kata),var(--mid),var(--ana))}
+.leg-k{color:var(--kata);font-weight:600}.leg-a{color:var(--ana);font-weight:600}
+.axchip{font:500 12px/1 var(--font-mono);padding:3px 6px;border-radius:5px;color:#fff}
+.axchip.x{background:var(--x)}.axchip.y{background:var(--y)}.axchip.z{background:var(--z)}.axchip.w{background:var(--w)}
+.slice-tag{display:flex;align-items:center;gap:10px;padding:8px 12px}
+.slice-tag strong{font:600 15px/1.2 var(--font-display)}
+.slice-tag .mono{font-size:12px;color:var(--muted)}
+.sw{flex:none;width:14px;height:14px;border-radius:4px;background:var(--mid)}
+.ov-tr{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:6px;align-items:center}
+.seg{display:flex;gap:2px;padding:3px;background:var(--chip);border-radius:10px}
+.seg button{appearance:none;border:0;background:transparent;color:var(--muted);font-size:13px;font-weight:500;line-height:1.1;padding:8px 11px;border-radius:7px;cursor:pointer;white-space:nowrap;flex:1}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px var(--shadow),0 0 0 1px var(--line)}
+.ov-tr .seg{background:var(--panel);background:color-mix(in srgb,var(--panel) 84%,transparent);border:1px solid var(--line)}
+.ov-tr .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);box-shadow:none}
+.icon-btn{appearance:none;width:38px;height:38px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--panel);background:color-mix(in srgb,var(--panel) 84%,transparent);color:var(--ink);cursor:pointer}
+.icon-btn:hover{border-color:var(--muted)}
+.icon-btn svg{width:18px;height:18px}
+.gizmo{position:absolute;left:max(8px,env(safe-area-inset-left,0px));bottom:8px;width:112px;height:112px;pointer-events:none}
+.hint{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:12px;margin:0;font-size:12px;line-height:1.4;color:var(--muted);text-align:right;max-width:44ch;pointer-events:none}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
+
+/* panel blocks */
+.blk{display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font:600 20px/1.2 var(--font-display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+h3{font:600 11.5px/1.2 var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.lead{margin:0;font-size:15px;line-height:1.55;max-width:62ch}
+.prose{gap:10px}
+.prose p{margin:0;font-size:14.5px;line-height:1.6;max-width:62ch}
+.note{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
+.blk-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13.5px;font-weight:500;line-height:1.2;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.small{padding:6px 10px;font-size:12.5px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:22px;cursor:pointer}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13.5px}
+.ctl-head label{font-weight:500}
+.ctl-head output{font-family:var(--font-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ticks{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.ticks button{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 0;font:500 12px/1 var(--font-mono);color:var(--muted);cursor:pointer}
+.ticks button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+
+/* analogy figure */
+.analogy{margin:0;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg);gap:8px}
+.an-labels{display:grid;grid-template-columns:56% 1fr;gap:10px;font-size:12px;color:var(--muted);font-weight:500}
+.an-labels span:last-child{padding-left:2px}
+#analogy{display:block;width:100%;height:178px}
+.analogy figcaption{font-size:12.8px;line-height:1.5;color:var(--muted)}
+
+/* object chips */
+.objs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.objs button{appearance:none;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.objs button:hover{border-color:var(--muted)}
+.objs button b{font-weight:600;font-size:13.5px}
+.objs button span{font:400 11.5px/1.2 var(--font-mono);color:var(--muted)}
+.objs button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.objs button[aria-pressed="true"] span{color:var(--accent)}
+
+/* rotation planes */
+.planes{display:flex;flex-direction:column;gap:12px}
+.pgrp{display:flex;flex-direction:column;gap:4px}
+.pgrp p{margin:0 0 2px;font-size:12.5px;color:var(--muted)}
+.prow{display:grid;grid-template-columns:30px minmax(0,1fr) 46px;gap:10px;align-items:center}
+.prow label{font:500 13px/1 var(--font-mono);letter-spacing:.02em}
+.prow output{font:400 12.5px/1 var(--font-mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ax-x{color:var(--x)}.ax-y{color:var(--y)}.ax-z{color:var(--z)}.ax-w{color:var(--w)}
+.toggles{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px}
+.chk{display:inline-flex;align-items:center;gap:7px;cursor:pointer}
+.chk input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+
+/* cells */
+.cellchips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cellchips button{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 6px;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.cellchips button i{width:9px;height:9px;border-radius:2px;flex:none}
+.cellchips button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.cellchips .wide{grid-column:span 3}
+
+/* try chips */
+.try{display:flex;flex-wrap:wrap;gap:6px}
+.try button{appearance:none;border:1px dashed color-mix(in srgb,var(--accent) 55%,var(--line));background:transparent;color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;cursor:pointer;text-align:left}
+.try button:hover{background:var(--accent-soft);border-style:solid}
+
+/* tables */
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font:500 11px/1.2 var(--font-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 8px;text-align:right;font-family:var(--font-mono);font-variant-numeric:tabular-nums;border-bottom:1px solid var(--line)}
+td:first-child{font-family:var(--font-body)}
+tr.on td{background:var(--accent-soft);color:var(--ink)}
+tr.on td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.euler{margin:0;font-size:13px;color:var(--muted)}
+.facts-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.facts-head strong{font:600 16px/1.2 var(--font-display)}
+.facts-head span{font-size:12.5px;color:var(--muted)}
+
+.readout{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.readout .sw{width:22px;height:22px;border-radius:6px}
+.readout strong{display:block;font:600 15px/1.25 var(--font-display)}
+.readout span.mono{font-size:12px;color:var(--muted)}
+.legend-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px}
+.legend-list li{display:flex;align-items:center;gap:8px}
+.legend-list i{width:12px;height:12px;border-radius:3px;flex:none}
+.src{font-size:12px;color:var(--muted);margin:0;border-top:1px solid var(--line);padding-top:14px}
+
+@media (max-width: 900px){
+  html,body{height:auto}
+  body{display:block;overflow:auto}
+  .app{display:block}
+  .stage{height:62vh;height:62svh;min-height:340px;max-height:620px}
+  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  .panel-inner{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .ov-tl{max-width:calc(100% - 28px);top:58px}
+  .hint{display:none}
+  #stageBig{font-size:20px}
+}
+@media (max-width: 420px){
+  .tabs button{padding:9px 10px;font-size:13px}
+  .seg button{padding:8px 9px}
+}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <rect x="4" y="4" width="32" height="32" rx="1.5" fill="none" stroke="var(--ana)" stroke-width="2.4"/>
+        <rect x="13.5" y="13.5" width="13" height="13" rx="1" fill="none" stroke="var(--kata)" stroke-width="2.4"/>
+        <path d="M5 5L13.5 13.5M35 5L26.5 13.5M5 35L13.5 26.5M35 35L26.5 26.5" stroke="var(--mid)" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Окно в четвёртое измерение</h1>
+        <p class="sub">Тессеракт и все шесть правильных 4D-многогранников</p>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Режим">
+      <button role="tab" data-mode="build" aria-selected="false">Построение</button>
+      <button role="tab" data-mode="project" aria-selected="true">Тень</button>
+      <button role="tab" data-mode="slice" aria-selected="false">Сечения</button>
+      <button role="tab" data-mode="fold" aria-selected="false">Развёртка</button>
+    </nav>
+  </div>
+</header>
+
+<main class="app">
+  <section class="stage" id="stage" aria-label="Трёхмерная тень четырёхмерной фигуры">
+    <canvas id="gl"></canvas>
+    <div class="ov ov-tl">
+      <div class="stage-title glass" id="stageTitle" hidden><span id="stageBig">4D</span><span id="stageSmall"></span></div>
+      <div class="legend glass" id="legDepth"><span class="leg-k">ката</span><span class="leg-bar"></span><span class="leg-a">ана</span><span>· глубина по W</span></div>
+      <div class="legend glass" id="legAxis" hidden><span class="axchip x">X</span><span class="axchip y">Y</span><span class="axchip z">Z</span><span class="axchip w">W</span><span>направление ребра</span></div>
+      <div class="legend glass" id="legCells" hidden><span class="axchip w">W</span><span class="axchip x">X</span><span class="axchip y">Y</span><span class="axchip z">Z</span><span>ячейки по осям</span></div>
+      <div class="slice-tag glass" id="sliceTag" hidden><span class="sw" id="sliceTagSw"></span><div><strong id="sliceTagName">—</strong><br><span class="mono" id="sliceTagW">w = 0,00</span></div></div>
+    </div>
+    <div class="ov-tr">
+      <div class="seg" id="dragSeg" role="group" aria-label="Что делает перетаскивание">
+        <button data-drag="3d" aria-pressed="true" title="Перетаскивание облетает камерой вокруг тени">Облёт</button>
+        <button data-drag="4d" aria-pressed="false" title="Перетаскивание поворачивает фигуру в плоскостях с осью W">Поворот в 4D</button>
+      </div>
+      <button class="icon-btn" id="pauseBtn" aria-label="Пауза" title="Пауза"><svg viewBox="0 0 24 24" fill="currentColor" id="pauseIco"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+      <button class="icon-btn" id="resetBtn" aria-label="Сбросить поворот и камеру" title="Сбросить поворот и камеру"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg></button>
+    </div>
+    <canvas class="gizmo" id="gizmo" aria-hidden="true"></canvas>
+    <p class="hint" id="hint">Тяните — облёт камеры · Shift + тяните — поворот в 4D · колесо — масштаб</p>
+    <div class="fail" id="fail" hidden><p>Не удалось запустить WebGL. Модели нужен браузер с поддержкой 3D-графики.</p></div>
+  </section>
+
+  <aside class="panel" aria-label="Управление и пояснения">
+    <div class="panel-inner">
+
+      <!-- ============ intros ============ -->
+      <section class="blk" data-modes="build">
+        <h2>Как собрать тессеракт</h2>
+        <p class="lead">Каждое новое измерение добавляется одним приёмом: фигуру копируют, сдвигают в новом направлении, перпендикулярном всем прежним, и соединяют копии рёбрами.</p>
+      </section>
+      <section class="blk" data-modes="project">
+        <h2>Тень четырёхмерного тела</h2>
+        <p class="lead">Мы видим не сам тессеракт, а его трёхмерную тень. Житель плоскости так же видит лишь плоскую тень куба: квадрат внутри квадрата.</p>
+      </section>
+      <section class="blk" data-modes="slice">
+        <h2>Сечение нашим пространством</h2>
+        <p class="lead">Представьте, что 4D-фигура проходит сквозь наше пространство. В каждый момент мы видим только её сечение: объёмное тело, которое меняет форму. Так житель плоскости видит проходящий сквозь неё куб: как многоугольник.</p>
+      </section>
+      <section class="blk" data-modes="fold">
+        <h2>Развёртка тессеракта</h2>
+        <p class="lead">Куб разворачивается в крест из шести квадратов. Тессеракт разворачивается в восемь кубов, и эта развёртка помещается в нашем пространстве. Сложить её обратно можно только через четвёртое измерение: каждый куб поворачивают на 90° вокруг общей грани в сторону W.</p>
+      </section>
+
+      <!-- ============ analogy ============ -->
+      <figure class="blk analogy" data-modes="project slice fold">
+        <div class="an-labels"><span id="anL">Мы видим куб</span><span id="anR">Житель плоскости видит тень</span></div>
+        <canvas id="analogy" aria-label="Та же ситуация на одно измерение ниже"></canvas>
+        <figcaption id="anCap"></figcaption>
+      </figure>
+
+      <!-- ============ build ============ -->
+      <section class="blk" data-modes="build">
+        <div class="ctl">
+          <div class="ctl-head"><label for="buildS">Измерение</label><output id="buildOut" for="buildS">4D</output></div>
+          <input type="range" id="buildS" min="0" max="4" step="0.005" value="4">
+        </div>
+        <div class="ticks" id="buildTicks">
+          <button data-s="0" aria-pressed="false">0D</button><button data-s="1" aria-pressed="false">1D</button><button data-s="2" aria-pressed="false">2D</button><button data-s="3" aria-pressed="false">3D</button><button data-s="4" aria-pressed="true">4D</button>
+        </div>
+        <div class="row"><button class="btn primary" id="buildPlay">Собрать с нуля</button></div>
+      </section>
+      <section class="blk" data-modes="build">
+        <h3>Сколько частей</h3>
+        <div class="tbl-wrap">
+          <table id="ladder">
+            <thead><tr><th>Фигура</th><th>Вершины</th><th>Рёбра</th><th>Грани</th><th>Ячейки</th></tr></thead>
+            <tbody>
+              <tr data-n="0"><td>точка</td><td>1</td><td>—</td><td>—</td><td>—</td></tr>
+              <tr data-n="1"><td>отрезок</td><td>2</td><td>1</td><td>—</td><td>—</td></tr>
+              <tr data-n="2"><td>квадрат</td><td>4</td><td>4</td><td>1</td><td>—</td></tr>
+              <tr data-n="3"><td>куб</td><td>8</td><td>12</td><td>6</td><td>1</td></tr>
+              <tr data-n="4"><td>тессеракт</td><td>16</td><td>32</td><td>24</td><td>8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">Правило удвоения: при сдвиге каждая старая часть даёт две копии, а каждая часть на размерность ниже прочерчивает новую. Рёбра тессеракта: 12·2 + 8 = 32. Грани: 6·2 + 12 = 24. Кубические ячейки: 1·2 + 6 = 8.</p>
+      </section>
+      <section class="blk prose" data-modes="build">
+        <h3>Что здесь происходит</h3>
+        <p>Пока сдвиг идёт вдоль X, Y или Z, вы видите его без искажений. Направления W в нашем пространстве нет, поэтому последний шаг выглядит иначе: одна копия куба уменьшается, другая растёт. Так перспектива показывает удаление: дальняя по W копия кажется меньше, как дальняя грань куба на рисунке.</p>
+        <p>Рёбра окрашены по направлению. Фиолетовые идут вдоль W и соединяют внутренний куб с внешним. На самом деле все 32 ребра тессеракта одинаковой длины и сходятся у каждой вершины по четыре, под прямыми углами друг к другу.</p>
+      </section>
+
+      <!-- ============ slice controls ============ -->
+      <section class="blk" data-modes="slice">
+        <div class="readout"><span class="sw" id="sliceSw"></span><div><strong id="sliceName">—</strong><span class="mono" id="sliceCounts"></span></div></div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="sliceC">Положение нашего пространства</label><output id="sliceOut" for="sliceC">w = 0,00</output></div>
+          <input type="range" id="sliceC" min="-1.05" max="1.05" step="0.001" value="0">
+        </div>
+        <div class="row"><button class="btn primary" id="sweepBtn">Остановить проход</button><label class="chk"><input type="checkbox" id="ghostChk" checked> Тень всей фигуры</label></div>
+      </section>
+      <section class="blk" data-modes="slice" data-objs-not="sphere">
+        <h3>Чем вперёд входит фигура</h3>
+        <div class="seg" id="presetSeg" role="group" aria-label="Ориентация">
+          <button data-preset="cell" aria-pressed="false">Ячейкой</button><button data-preset="face" aria-pressed="false">Гранью</button><button data-preset="edge" aria-pressed="false">Ребром</button><button data-preset="vertex" aria-pressed="true">Вершиной</button>
+        </div>
+      </section>
+
+      <!-- ============ fold controls ============ -->
+      <section class="blk" data-modes="fold">
+        <div class="ctl">
+          <div class="ctl-head"><label for="foldU">Сложено</label><output id="foldOut" for="foldU">0 %</output></div>
+          <input type="range" id="foldU" min="0" max="1" step="0.001" value="0">
+        </div>
+        <div class="row"><button class="btn primary" id="foldPlay">Остановить</button><button class="btn" id="foldIn">Сложить</button><button class="btn" id="foldOutBtn">Развернуть</button></div>
+        <ul class="legend-list">
+          <li><i style="background:var(--w)"></i>w− и w+: центр и низ креста</li>
+          <li><i style="background:var(--x)"></i>x− и x+</li>
+          <li><i style="background:var(--y)"></i>y− и y+</li>
+          <li><i style="background:var(--z)"></i>z− и z+</li>
+        </ul>
+      </section>
+
+      <!-- ============ try ============ -->
+      <section class="blk" data-modes="project">
+        <h3>Попробуйте</h3>
+        <div class="try">
+          <button data-try="xw">Только XW: тессеракт выворачивается</button>
+          <button data-try="r3">Обычное 3D-вращение</button>
+          <button data-try="follow">Следить за внутренним кубом</button>
+          <button data-try="double">Двойное вращение XY + ZW</button>
+          <button data-try="ortho">Тень при параллельном свете</button>
+          <button data-try="600">600-ячейник</button>
+        </div>
+      </section>
+      <section class="blk" data-modes="slice">
+        <h3>Попробуйте</h3>
+        <div class="try">
+          <button data-try="vfirst">Вершиной: тетраэдр → октаэдр</button>
+          <button data-try="cfirst">Ячейкой: всё время куб</button>
+          <button data-try="efirst">Ребром: призмы</button>
+          <button data-try="sphere">Гиперсфера</button>
+          <button data-try="spin">Остановить срез и вращать в XW</button>
+          <button data-try="c24">24-ячейник</button>
+        </div>
+      </section>
+
+      <!-- ============ shared: object ============ -->
+      <section class="blk" data-modes="project slice">
+        <h3>Фигура</h3>
+        <div class="objs" id="objChips"></div>
+        <p class="note">В 4D ровно шесть правильных выпуклых многогранников, в 3D их пять. Здесь все шесть и гиперсфера.</p>
+      </section>
+
+      <!-- ============ shared: rotation ============ -->
+      <section class="blk" data-modes="project slice">
+        <div class="blk-head"><h3>Вращение в 4D</h3><div class="row"><button class="btn small" id="rotStop">Остановить</button><button class="btn small" id="rotReset">Исходное положение</button></div></div>
+        <div class="planes">
+          <div class="pgrp"><p>Знакомые плоскости: обычный поворот</p>
+            <div class="prow"><label for="sp0"><span class="ax-x">X</span><span class="ax-y">Y</span></label><input type="range" id="sp0" min="-1" max="1" step="0.01" value="0"><output id="so0">0,00</output></div>
+            <div class="prow"><label for="sp1"><span class="ax-x">X</span><span class="ax-z">Z</span></label><input type="range" id="sp1" min="-1" max="1" step="0.01" value="0"><output id="so1">0,00</output></div>
+            <div class="prow"><label for="sp2"><span class="ax-y">Y</span><span class="ax-z">Z</span></label><input type="range" id="sp2" min="-1" max="1" step="0.01" value="0"><output id="so2">0,00</output></div>
+          </div>
+          <div class="pgrp"><p>Плоскости с осью W: фигура выворачивается</p>
+            <div class="prow"><label for="sp3"><span class="ax-x">X</span><span class="ax-w">W</span></label><input type="range" id="sp3" min="-1" max="1" step="0.01" value="0"><output id="so3">0,00</output></div>
+            <div class="prow"><label for="sp4"><span class="ax-y">Y</span><span class="ax-w">W</span></label><input type="range" id="sp4" min="-1" max="1" step="0.01" value="0"><output id="so4">0,00</output></div>
+            <div class="prow"><label for="sp5"><span class="ax-z">Z</span><span class="ax-w">W</span></label><input type="range" id="sp5" min="-1" max="1" step="0.01" value="0"><output id="so5">0,00</output></div>
+          </div>
+        </div>
+        <p class="note">1,00 — один оборот за 4 секунды. Знак задаёт направление.</p>
+      </section>
+
+      <!-- ============ shared: projection ============ -->
+      <section class="blk" data-modes="project build fold">
+        <h3>Проекция из 4D в 3D</h3>
+        <div class="seg" id="projSeg" role="group" aria-label="Тип проекции">
+          <button data-proj="persp" aria-pressed="true">Перспектива</button><button data-proj="ortho" aria-pressed="false">Параллельная</button>
+        </div>
+        <div class="ctl" id="distCtl">
+          <div class="ctl-head"><label for="dist">Расстояние до 4D-глаза</label><output id="distOut" for="dist">2,40</output></div>
+          <input type="range" id="dist" min="1.3" max="8" step="0.01" value="2.4">
+        </div>
+        <div class="toggles" data-modes="project" data-objs-not="sphere">
+          <label class="chk"><input type="checkbox" id="vertChk" checked> Вершины</label>
+          <label class="chk"><input type="checkbox" id="faceChk" checked> Грани</label>
+        </div>
+        <div class="seg" id="colorSeg" role="group" aria-label="Окраска рёбер" data-modes="project" data-objs="tesseract">
+          <button data-color="depth" aria-pressed="true">Цвет: глубина W</button><button data-color="axis" aria-pressed="false">Цвет: направление</button>
+        </div>
+      </section>
+
+      <!-- ============ cells ============ -->
+      <section class="blk" data-modes="project" data-objs="tesseract">
+        <h3>Восемь кубических ячеек</h3>
+        <p class="note">Выберите куб и проследите за ним при вращении в XW: сжатая пирамида окажется таким же кубом.</p>
+        <div class="cellchips" id="cellChips">
+          <button class="wide" data-cell="-1" aria-pressed="true">Без подсветки</button>
+          <button data-cell="6" aria-pressed="false"><i style="background:var(--w)"></i>w− внутр.</button>
+          <button data-cell="7" aria-pressed="false"><i style="background:var(--w)"></i>w+ внешн.</button>
+          <button data-cell="0" aria-pressed="false"><i style="background:var(--x)"></i>x−</button>
+          <button data-cell="1" aria-pressed="false"><i style="background:var(--x)"></i>x+</button>
+          <button data-cell="2" aria-pressed="false"><i style="background:var(--y)"></i>y−</button>
+          <button data-cell="3" aria-pressed="false"><i style="background:var(--y)"></i>y+</button>
+          <button data-cell="4" aria-pressed="false"><i style="background:var(--z)"></i>z−</button>
+          <button data-cell="5" aria-pressed="false"><i style="background:var(--z)"></i>z+</button>
+        </div>
+      </section>
+
+      <!-- ============ explanations ============ -->
+      <section class="blk prose" data-modes="project">
+        <h3>Что здесь происходит</h3>
+        <p>Внутренний куб не меньше внешнего. Он дальше по оси W, поэтому в перспективе кажется маленьким. Шесть усечённых пирамид между ними тоже кубы, искажённые проекцией. Всего кубов восемь.</p>
+        <p>В 4D вращение происходит в плоскости, а не вокруг оси. Плоскостей шесть. В XY, XZ и YZ тессеракт поворачивается как обычный предмет. XW, YW и ZW затрагивают четвёртое измерение: внутренний куб выходит наружу, внешний уходит внутрь, и кажется, что фигура выворачивается наизнанку. Длины рёбер при этом не меняются, искажает только тень.</p>
+        <p>Двойное вращение, например в XY и ZW одновременно, в 3D невозможно: у него нет оси, неподвижным остаётся только центр.</p>
+        <p>Цвет показывает координату W. Синий конец называется «ката», оранжевый «ана». Эти слова для двух направлений четвёртого измерения предложил Чарльз Хинтон в 1888 году.</p>
+      </section>
+      <section class="blk prose" data-modes="slice">
+        <h3>Что здесь происходит</h3>
+        <p>Все точки сечения лежат на одной глубине W, поэтому сечение окрашено в один цвет.</p>
+        <p>Форма сечения зависит от того, как фигура повёрнута. Тессеракт, входящий ячейкой вперёд, всё время даёт куб. Вершиной вперёд он даёт тетраэдр, потом усечённый тетраэдр, в середине октаэдр, и обратно. Куб, входящий в плоскость вершиной, так же даёт треугольник, шестиугольник и снова треугольник.</p>
+        <p>Бледный каркас — параллельная тень всей фигуры. Сечение всегда лежит внутри неё.</p>
+      </section>
+      <section class="blk prose" data-modes="fold">
+        <h3>Что здесь происходит</h3>
+        <p>В сложенном виде центральный куб креста оказывается внутренним, а нижний куб креста становится внешним. Шесть боковых кубов превращаются в усечённые пирамиды между ними.</p>
+        <p>Каждая квадратная грань тессеракта принадлежит ровно двум кубам. Поэтому при складывании грани соседних кубов сходятся попарно, так же как стороны квадратов при сборке куба.</p>
+        <p>Эту развёртку изобразил Сальвадор Дали в картине «Распятие (Corpus Hypercubus)», 1954.</p>
+      </section>
+
+      <!-- ============ facts ============ -->
+      <section class="blk" data-modes="project slice" id="facts">
+        <div class="facts-head"><strong id="fName">Тессеракт</strong><span class="mono" id="fSch">{4,3,3}</span></div>
+        <p class="note" id="fDesc"></p>
+        <div class="tbl-wrap" id="fTableWrap">
+          <table><thead><tr><th>Вершины</th><th>Рёбра</th><th>Грани</th><th>Ячейки</th></tr></thead>
+          <tbody><tr><td id="fV" style="text-align:right">16</td><td id="fE">32</td><td id="fF">24</td><td id="fC">8</td></tr></tbody></table>
+        </div>
+        <p class="euler mono" id="fEuler"></p>
+      </section>
+
+      <p class="src">Флатландия — повесть Эдвина Эбботта (1884) о жителях плоскости. Аналогия «на ступень ниже» в каждом режиме идёт от неё.</p>
+    </div>
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/ConvexHull.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+if (!window.THREE || !THREE.OrbitControls || !THREE.ConvexHull) { $('#fail').hidden = false; return; }
+
+/* =====================================================================
+   Geometry: regular 4-polytopes (verified: f-vectors 16/32/24/8, 5/10/10/5,
+   8/24/32/16, 24/96/96/24, 120/720/1200/600, 600/1200/720/120)
+   ===================================================================== */
+const PHI = (1 + Math.sqrt(5)) / 2;
+function permsParity(n) {
+  const out = [];
+  const rec = (arr, rest) => {
+    if (!rest.length) { let inv = 0; for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) if (arr[i] > arr[j]) inv++; out.push({ p: arr, even: inv % 2 === 0 }); return; }
+    rest.forEach((x, i) => rec(arr.concat([x]), rest.slice(0, i).concat(rest.slice(i + 1))));
+  };
+  rec([], [...Array(n).keys()]);
+  return out;
+}
+function normalizeV(V) { let r = 0; V.forEach(v => { r = Math.max(r, Math.hypot(...v)); }); return V.map(v => v.map(x => x / r)); }
+function d2(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2; return s; }
+function edgesByMin(V) {
+  let min = Infinity; const n = V.length;
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const d = d2(V[i], V[j]); if (d > 1e-9 && d < min) min = d; }
+  const E = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (Math.abs(d2(V[i], V[j]) - min) < min * 1e-3) E.push([i, j]);
+  return E;
+}
+function adjOf(n, E) { const A = Array.from({ length: n }, () => new Set()); E.forEach(([a, b]) => { A[a].add(b); A[b].add(a); }); return A; }
+function triangles(n, E) { const A = adjOf(n, E), T = []; E.forEach(([i, j]) => { A[i].forEach(k => { if (k > j && A[j].has(k)) T.push([i, j, k]); }); }); return T; }
+function tetras(n, E, T) { const A = adjOf(n, E), C = []; T.forEach(([i, j, k]) => { A[i].forEach(l => { if (l > k && A[j].has(l) && A[k].has(l)) C.push([i, j, k, l]); }); }); return C; }
+function centroid(V, idx) { const c = new Array(V[0].length).fill(0); idx.forEach(i => V[i].forEach((x, k) => c[k] += x / idx.length)); return c; }
+function unit(v) { const l = Math.hypot(...v) || 1; return v.map(x => x / l); }
+function dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+
+function makeTesseract() {
+  const V = [], E = [], EA = [], F = [], FC = [];
+  for (let b = 0; b < 16; b++) V.push([0, 1, 2, 3].map(i => ((b >> i) & 1) ? 0.5 : -0.5));
+  for (let b = 0; b < 16; b++) for (let i = 0; i < 4; i++) if (!((b >> i) & 1)) { E.push([b, b | (1 << i)]); EA.push(i); }
+  const FA = [];
+  for (let a = 0; a < 4; a++) for (let c = a + 1; c < 4; c++) {
+    const o = [0, 1, 2, 3].filter(k => k !== a && k !== c);
+    for (let s0 = 0; s0 < 2; s0++) for (let s1 = 0; s1 < 2; s1++) {
+      const base = (s0 << o[0]) | (s1 << o[1]);
+      F.push([base, base | (1 << a), base | (1 << a) | (1 << c), base | (1 << c)]);
+      FC.push([o[0] * 2 + s0, o[1] * 2 + s1]);
+      FA.push([a, c, o[0], o[1]]);
+    }
+  }
+  return { V, E, EA, F, FC, FA, dirs: { cell: [0, 0, 0, 1], face: unit([0, 0, 1, 1]), edge: unit([0, 1, 1, 1]), vertex: [0.5, 0.5, 0.5, 0.5] } };
+}
+function makeSimplex() {
+  const s = 1 / Math.sqrt(5);
+  const V = normalizeV([[1, 1, 1, -s], [1, -1, -1, -s], [-1, 1, -1, -s], [-1, -1, 1, -s], [0, 0, 0, 4 * s]]);
+  const E = edgesByMin(V), F = triangles(5, E);
+  return { V, E, F, dirs: { vertex: unit(V[4]), cell: unit(V[4].map(x => -x)), edge: unit(centroid(V, [3, 4])), face: unit(centroid(V, [2, 3, 4])) } };
+}
+function make16() {
+  const V = [];
+  for (let i = 0; i < 4; i++) for (const s of [1, -1]) { const v = [0, 0, 0, 0]; v[i] = s; V.push(v); }
+  const E = edgesByMin(V), F = triangles(8, E);
+  return { V, E, F, dirs: { vertex: [0, 0, 0, 1], cell: [0.5, 0.5, 0.5, 0.5], edge: unit([0, 0, 1, 1]), face: unit([0, 1, 1, 1]) } };
+}
+function make24() {
+  const V = [];
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) for (const a of [1, -1]) for (const b of [1, -1]) { const v = [0, 0, 0, 0]; v[i] = a; v[j] = b; V.push(v); }
+  const Vn = normalizeV(V), E = edgesByMin(Vn), F = triangles(24, E);
+  return { V: Vn, E, F, dirs: { vertex: unit([0, 0, 1, 1]), cell: [0, 0, 0, 1], edge: unit(centroid(Vn, E[0])), face: unit(centroid(Vn, F[0])) } };
+}
+let RAW600 = null;
+function make600() {
+  if (RAW600) return RAW600;
+  const V = [];
+  for (let b = 0; b < 16; b++) V.push([0, 1, 2, 3].map(i => ((b >> i) & 1) ? 0.5 : -0.5));
+  for (let i = 0; i < 4; i++) for (const s of [1, -1]) { const v = [0, 0, 0, 0]; v[i] = s; V.push(v); }
+  const base = [PHI / 2, 0.5, 1 / (2 * PHI), 0];
+  permsParity(4).filter(q => q.even).forEach(({ p }) => {
+    for (let sg = 0; sg < 8; sg++) {
+      const v = p.map(k => base[k]);
+      let bit = 0;
+      for (let k = 0; k < 4; k++) if (v[k] !== 0) { if ((sg >> bit) & 1) v[k] = -v[k]; bit++; }
+      V.push(v);
+    }
+  });
+  const E = edgesByMin(V), F = triangles(V.length, E), C = tetras(V.length, E, F);
+  RAW600 = { V, E, F, C, dirs: { vertex: unit(V[0]), edge: unit(centroid(V, E[0])), face: unit(centroid(V, F[0])), cell: unit(centroid(V, C[0])) } };
+  return RAW600;
+}
+function make120() {
+  const p600 = make600();
+  const V = normalizeV(p600.C.map(c => centroid(p600.V, c)));
+  const E = edgesByMin(V);
+  const byEdge = new Map();
+  p600.C.forEach((c, ci) => { for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) { const k = Math.min(c[a], c[b]) + ',' + Math.max(c[a], c[b]); if (!byEdge.has(k)) byEdge.set(k, []); byEdge.get(k).push(ci); } });
+  const F = [];
+  byEdge.forEach(list => {
+    const cen = centroid(V, list);
+    const u = unit(V[list[0]].map((x, k) => x - cen[k]));
+    let w = V[list[1]].map((x, k) => x - cen[k]); const du = dot(w, u); w = unit(w.map((x, k) => x - du * u[k]));
+    const ang = list.map(i => { const r = V[i].map((x, k) => x - cen[k]); return [Math.atan2(dot(r, w), dot(r, u)), i]; });
+    ang.sort((a, b) => a[0] - b[0]);
+    F.push(ang.map(a => a[1]));
+  });
+  return { V, E, F, dirs: { vertex: unit(V[0]), edge: unit(centroid(V, E[0])), face: unit(centroid(V, F[0])), cell: unit(p600.V[0]) } };
+}
+function makeSphere() {
+  // structured sample of S³ on nested Clifford tori
+  const P = [], K = 11, N = 46;
+  for (let k = 1; k < K; k++) {
+    const eta = (k / K) * Math.PI / 2, se = Math.sin(eta), ce = Math.cos(eta);
+    const n1 = Math.max(6, Math.round(N * se)), n2 = Math.max(6, Math.round(N * ce));
+    for (let i = 0; i < n1; i++) for (let j = 0; j < n2; j++) {
+      const a = (i + (k % 2) * 0.5) / n1 * Math.PI * 2, b = (j + 0.25 * k) / n2 * Math.PI * 2;
+      P.push([Math.cos(a) * se, Math.sin(a) * se, Math.cos(b) * ce, Math.sin(b) * ce]);
+    }
+  }
+  return { V: P, points: true, E: [], F: [], dirs: {} };
+}
+
+/* 3D analogues for the "one dimension lower" view */
+function poly3(Vraw) { const V = normalizeV(Vraw); return { V, E: edgesByMin(V) }; }
+function faceDir3(P) {
+  const A = adjOf(P.V.length, P.E), v0 = P.V[0], nb = [...A[0]];
+  for (let i = 0; i < nb.length; i++) for (let j = i + 1; j < nb.length; j++) {
+    const a = P.V[nb[i]].map((x, k) => x - v0[k]), b = P.V[nb[j]].map((x, k) => x - v0[k]);
+    const n = unit([a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]);
+    const c = dot(n, v0), sgn = Math.sign(c) || 1;
+    const ds = P.V.map(v => dot(n, v) - c);
+    if (ds.every(d => d * sgn <= 1e-6)) { const on = P.V.map((v, k) => k).filter(k => Math.abs(ds[k]) < 1e-6); return unit(centroid(P.V, on)); }
+  }
+  return [0, 0, 1];
+}
+const AN = (() => {
+  const cubeV = []; for (let b = 0; b < 8; b++) cubeV.push([0, 1, 2].map(i => ((b >> i) & 1) ? 1 : -1));
+  const ico = []; for (const a of [1, -1]) for (const b of [1, -1]) { ico.push([0, a, b * PHI]); ico.push([a, b * PHI, 0]); ico.push([b * PHI, 0, a]); }
+  const dod = []; for (const a of [1, -1]) for (const b of [1, -1]) for (const c of [1, -1]) dod.push([a, b, c]);
+  for (const a of [1, -1]) for (const b of [1, -1]) { dod.push([0, a / PHI, b * PHI]); dod.push([a / PHI, b * PHI, 0]); dod.push([a * PHI, 0, b / PHI]); }
+  const out = {
+    cube: poly3(cubeV), tetra: poly3([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]]),
+    octa: poly3([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]),
+    icosa: poly3(ico), dodeca: poly3(dod)
+  };
+  out.cube.EA = out.cube.E.map(([a, b]) => [0, 1, 2].find(i => out.cube.V[a][i] !== out.cube.V[b][i]));
+  Object.values(out).forEach(P => { P.dirs = { vertex: unit(P.V[0]), edge: unit(centroid(P.V, P.E[0])), face: faceDir3(P) }; });
+  out.cube.dirs.face = [0, 0, 1];
+  // sphere as rings (segments)
+  const S = [], SE = [];
+  const ring = pts => { const b = S.length; pts.forEach(p => S.push(p)); for (let i = 0; i < pts.length; i++) SE.push([b + i, b + (i + 1) % pts.length]); };
+  for (const z of [-0.8, -0.45, 0, 0.45, 0.8]) { const r = Math.sqrt(1 - z * z), pts = []; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; pts.push([r * Math.cos(a), r * Math.sin(a), z]); } ring(pts); }
+  for (let m = 0; m < 6; m++) { const ph = m / 6 * Math.PI, pts = []; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; pts.push([Math.cos(a) * Math.cos(ph), Math.cos(a) * Math.sin(ph), Math.sin(a)]); } ring(pts); }
+  out.sphere = { V: S, E: SE, sphere: true, dirs: { vertex: [0, 0, 1], edge: [0, 0, 1], face: [0, 0, 1] } };
+  return out;
+})();
+
+/* =====================================================================
+   Object registry
+   ===================================================================== */
+const META = {
+  tesseract: { name: 'Тессеракт', alt: '8-ячейник, гиперкуб', sch: '{4,3,3}', chip: '{4,3,3} · 8 кубов', fvec: [16, 32, 24, 8], analog: 'cube', an: ['куб', 'куб', 'Куб', 'его'], make: makeTesseract, edgeR: .026, vertR: .052, verts: true, faces: true, faceA: .10,
+    desc: 'Четырёхмерный аналог куба. Восемь кубических ячеек; у каждой вершины сходятся четыре ребра под прямыми углами, у каждого ребра — три куба.' },
+  simplex: { name: '5-ячейник', alt: 'пентахорон, 4-симплекс', sch: '{3,3,3}', chip: '{3,3,3} · 5 тетраэдров', fvec: [5, 10, 10, 5], analog: 'tetra', an: ['тетраэдр', 'тетраэдр', 'Тетраэдр', 'его'], make: makeSimplex, edgeR: .028, vertR: .058, verts: true, faces: true, faceA: .12,
+    desc: 'Простейшая четырёхмерная фигура: пять вершин, каждая соединена с каждой. Аналог тетраэдра, собран из пяти тетраэдров. Двойственен сам себе.' },
+  c16: { name: '16-ячейник', alt: 'гипероктаэдр', sch: '{3,3,4}', chip: '{3,3,4} · 16 тетраэдров', fvec: [8, 24, 32, 16], analog: 'octa', an: ['октаэдр', 'октаэдр', 'Октаэдр', 'его'], make: make16, edgeR: .024, vertR: .052, verts: true, faces: true, faceA: .08,
+    desc: 'Аналог октаэдра: вершины на концах четырёх взаимно перпендикулярных осей. Двойственен тессеракту: центры ячеек одного — вершины другого.' },
+  c24: { name: '24-ячейник', alt: 'икоситетрахорон', sch: '{3,4,3}', chip: '{3,4,3} · 24 октаэдра', fvec: [24, 96, 96, 24], analog: 'cube', noAnalog: true, an: ['куб', 'куб', 'Куб', 'его'], make: make24, edgeR: .019, vertR: .04, verts: true, faces: true, faceA: .05,
+    desc: 'Единственный правильный многогранник без аналога в 3D. Двадцать четыре октаэдра; двойственен сам себе.' },
+  c120: { name: '120-ячейник', alt: 'гекатоникосахорон', sch: '{5,3,3}', chip: '{5,3,3} · 120 додекаэдров', fvec: [600, 1200, 720, 120], analog: 'dodeca', an: ['додекаэдр', 'додекаэдр', 'Додекаэдр', 'его'], make: make120, edgeR: .0085, vertR: .016, verts: false, faces: false, faceA: .035,
+    desc: 'Аналог додекаэдра: 120 додекаэдров и 600 вершин. Двойственен 600-ячейнику.' },
+  c600: { name: '600-ячейник', alt: 'гексакосихорон', sch: '{3,3,5}', chip: '{3,3,5} · 600 тетраэдров', fvec: [120, 720, 1200, 600], analog: 'icosa', an: ['икосаэдр', 'икосаэдр', 'Икосаэдр', 'его'], make: make600, edgeR: .0105, vertR: .022, verts: true, faces: false, faceA: .035,
+    desc: 'Аналог икосаэдра: 600 тетраэдров, по пять вокруг каждого ребра, и 120 вершин.' },
+  sphere: { name: 'Гиперсфера', alt: 'трёхмерная сфера S³', sch: 'S³', chip: 'S³ · все точки на расстоянии 1', analog: 'sphere', an: ['сфера', 'сферу', 'Сфера', 'её'], make: makeSphere, points: true,
+    desc: 'Все точки четырёхмерного пространства на расстоянии 1 от центра. Её сечения нашим пространством — сферы, как сечения обычной сферы плоскостью — круги.' }
+};
+const ORDER = ['tesseract', 'simplex', 'c16', 'c24', 'c120', 'c600', 'sphere'];
+const CACHE = {};
+function getObj(id) {
+  if (CACHE[id]) return CACHE[id];
+  const raw = META[id].make();
+  const n = raw.V.length, V = new Float64Array(n * 4);
+  raw.V.forEach((v, i) => { for (let k = 0; k < 4; k++) V[i * 4 + k] = v[k]; });
+  const E = new Int32Array(raw.E.length * 2); raw.E.forEach(([a, b], i) => { E[i * 2] = a; E[i * 2 + 1] = b; });
+  const tris = [], triFace = [];
+  raw.F.forEach((f, fi) => { for (let k = 1; k < f.length - 1; k++) { tris.push(f[0], f[k], f[k + 1]); triFace.push(fi); } });
+  const o = { id, n, V, nE: raw.E.length, E, EA: raw.EA ? Int8Array.from(raw.EA) : null, F: raw.F, FC: raw.FC || null, FA: raw.FA || null,
+    tris: Int32Array.from(tris), triFace: Int32Array.from(triFace), nF: raw.F.length, dirs: raw.dirs, points: !!raw.points };
+  CACHE[id] = o;
+  return o;
+}
+
+/* =====================================================================
+   4D linear algebra (row-major)
+   ===================================================================== */
+function I4() { const m = new Float64Array(16); m[0] = m[5] = m[10] = m[15] = 1; return m; }
+function mul4(a, b, o) { const t = new Float64Array(16); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[i * 4 + k] * b[k * 4 + j]; t[i * 4 + j] = s; } o.set(t); return o; }
+function rotRows(M, i, j, ang) { const c = Math.cos(ang), s = Math.sin(ang); for (let k = 0; k < 4; k++) { const a = M[i * 4 + k], b = M[j * 4 + k]; M[i * 4 + k] = c * a - s * b; M[j * 4 + k] = s * a + c * b; } }
+function rotPlaneLeft(M, a, b, ang) {
+  const c = Math.cos(ang) - 1, s = Math.sin(ang), rA = [0, 0, 0, 0], rB = [0, 0, 0, 0];
+  for (let k = 0; k < 4; k++) { for (let i = 0; i < 4; i++) { rA[k] += a[i] * M[i * 4 + k]; rB[k] += b[i] * M[i * 4 + k]; } }
+  for (let i = 0; i < 4; i++) for (let k = 0; k < 4; k++) M[i * 4 + k] += c * (a[i] * rA[k] + b[i] * rB[k]) + s * (b[i] * rA[k] - a[i] * rB[k]);
+}
+function orthonormalize(M, N) {
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < i; j++) { let d = 0; for (let k = 0; k < N; k++) d += M[i * N + k] * M[j * N + k]; for (let k = 0; k < N; k++) M[i * N + k] -= d * M[j * N + k]; }
+    let l = 0; for (let k = 0; k < N; k++) l += M[i * N + k] ** 2; l = Math.sqrt(l);
+    if (l < 1e-6) return false;
+    for (let k = 0; k < N; k++) M[i * N + k] /= l;
+  }
+  return true;
+}
+function rotToAxis(n, k, N) {
+  const M = new Float64Array(N * N); for (let i = 0; i < N; i++) M[i * N + i] = 1;
+  const cs = Math.max(-1, Math.min(1, n[k]));
+  const v = n.map((x, i) => (i === k ? 1 : 0) - cs * x); const len = Math.hypot(...v);
+  let th, u = n, w;
+  if (len < 1e-9) { if (cs > 0) return M; const m = (k + 1) % N; const e = n.map((x, i) => (i === m ? 1 : 0)); const dd = dot(e, n); w = unit(e.map((x, i) => x - dd * n[i])); th = Math.PI; }
+  else { w = v.map(x => x / len); th = Math.acos(cs); }
+  const c = Math.cos(th) - 1, s = Math.sin(th);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) M[i * N + j] += c * (u[i] * u[j] + w[i] * w[j]) + s * (w[i] * u[j] - u[i] * w[j]);
+  return M;
+}
+
+/* =====================================================================
+   Theme tokens & colour LUTs
+   ===================================================================== */
+let TOK = {}, MONO = 'monospace';
+const LUTN = 256, LUT_S = new Float32Array(LUTN * 3), LUT_L = new Float32Array(LUTN * 3);
+const AXL = [new Float32Array(3), new Float32Array(3), new Float32Array(3), new Float32Array(3)];
+const INK_L = new Float32Array(3);
+function isDark() { const t = document.documentElement.getAttribute('data-theme'); if (t === 'dark') return true; if (t === 'light') return false; return matchMedia('(prefers-color-scheme: dark)').matches; }
+function hexRgb(h) { h = (h || '#888').trim().replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h.slice(0, 6), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+const lin = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+function readTokens() {
+  const cs = getComputedStyle(document.documentElement), g = n => cs.getPropertyValue(n).trim();
+  TOK = { stage: g('--stage'), ink: g('--ink'), muted: g('--muted'), line: g('--line'), panel: g('--panel'), bg: g('--bg'), chip: g('--chip'), accent: g('--accent'),
+    x: g('--x'), y: g('--y'), z: g('--z'), w: g('--w'), kata: g('--kata'), mid: g('--mid'), ana: g('--ana'), dark: isDark() };
+  const a = hexRgb(TOK.kata), b = hexRgb(TOK.mid), c = hexRgb(TOK.ana);
+  for (let i = 0; i < LUTN; i++) {
+    const t = i / (LUTN - 1); let p, q, u;
+    if (t < 0.5) { p = a; q = b; u = t * 2; } else { p = b; q = c; u = (t - 0.5) * 2; }
+    for (let k = 0; k < 3; k++) { const s = p[k] + (q[k] - p[k]) * u; LUT_S[i * 3 + k] = s; LUT_L[i * 3 + k] = lin(s); }
+  }
+  [TOK.x, TOK.y, TOK.z, TOK.w].forEach((h, i) => { const r = hexRgb(h); for (let k = 0; k < 3; k++) AXL[i][k] = lin(r[k]); });
+  MONO = g('--font-mono') || 'monospace';
+  const ink = hexRgb(TOK.dark ? '#C9D0DE' : '#3A4358'); for (let k = 0; k < 3; k++) INK_L[k] = lin(ink[k]);
+}
+const dIdx = w => { let t = (w + 1) * 0.5; t = t < 0 ? 0 : t > 1 ? 1 : t; return Math.round(t * (LUTN - 1)) * 3; };
+function depthCSS(w, a = 1) { const i = dIdx(w); return `rgba(${LUT_S[i] * 255 | 0},${LUT_S[i + 1] * 255 | 0},${LUT_S[i + 2] * 255 | 0},${a})`; }
+function hexA(h, a) { const r = hexRgb(h); return `rgba(${r[0] * 255 | 0},${r[1] * 255 | 0},${r[2] * 255 | 0},${a})`; }
+
+/* =====================================================================
+   Three.js scene
+   ===================================================================== */
+const canvas = $('#gl'), stage = $('#stage');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); } catch (e) { $('#fail').hidden = false; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
+const CAM_DIR = new THREE.Vector3(0.5, 0.36, 0.79).normalize();
+camera.position.copy(CAM_DIR).multiplyScalar(7.6);
+scene.add(camera);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
+controls.minDistance = 2.2; controls.maxDistance = 26; controls.rotateSpeed = 0.85;
+const hemi = new THREE.HemisphereLight(0xffffff, 0x39415a, 1.0); scene.add(hemi);
+const keyL = new THREE.DirectionalLight(0xffffff, 0.75); keyL.position.set(2, 3, 4); camera.add(keyL);
+const rimL = new THREE.DirectionalLight(0xffffff, 0.3); rimL.position.set(-3, -1, -2); camera.add(rimL);
+const uGlow = { value: 0.12 };
+const SCALE = 1.6;
+
+function tubeMaterial() {
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42, metalness: 0.05 });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uGlow = uGlow;
+    sh.vertexShader = 'attribute vec3 colorA;\nattribute vec3 colorB;\nattribute vec2 radAB;\nvarying vec3 vGrad;\n' +
+      sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nfloat tt = position.y + 0.5;\nvGrad = mix(colorA, colorB, tt);\ntransformed.xz *= mix(radAB.x, radAB.y, tt);');
+    sh.fragmentShader = 'uniform float uGlow;\nvarying vec3 vGrad;\n' +
+      sh.fragmentShader.replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( diffuse * vGrad, opacity );')
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vGrad * uGlow;');
+  };
+  return m;
+}
+function makeTubes(max) {
+  const geo = new THREE.CylinderGeometry(1, 1, 1, 12, 1, false);
+  const mk = s => { const a = new THREE.InstancedBufferAttribute(new Float32Array(max * s), s); a.setUsage(THREE.DynamicDrawUsage); return a; };
+  const cA = mk(3), cB = mk(3), rAB = mk(2);
+  geo.setAttribute('colorA', cA); geo.setAttribute('colorB', cB); geo.setAttribute('radAB', rAB);
+  const mat = tubeMaterial();
+  const mesh = new THREE.InstancedMesh(geo, mat, max);
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.count = 0; mesh.frustumCulled = false;
+  scene.add(mesh);
+  return { mesh, mat, cA, cB, rAB, max };
+}
+function makeSpheres(max) {
+  const geo = new THREE.SphereGeometry(1, 18, 12);
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.35, metalness: 0.05 });
+  mat.onBeforeCompile = sh => { sh.uniforms.uGlow = uGlow; sh.fragmentShader = 'uniform float uGlow;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * uGlow;'); };
+  const mesh = new THREE.InstancedMesh(geo, mat, max);
+  const c = new THREE.Color(1, 1, 1); for (let i = 0; i < max; i++) mesh.setColorAt(i, c);
+  mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+  mesh.count = 0; mesh.frustumCulled = false; scene.add(mesh);
+  return { mesh, mat };
+}
+function makeFaces(maxTri, opacity) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new THREE.BufferAttribute(new Float32Array(maxTri * 9), 3), col = new THREE.BufferAttribute(new Float32Array(maxTri * 9), 3);
+  pos.setUsage(THREE.DynamicDrawUsage); col.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position', pos); geo.setAttribute('color', col); geo.setDrawRange(0, 0);
+  const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity, side: THREE.DoubleSide, depthWrite: false });
+  const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.renderOrder = 2; scene.add(mesh);
+  return { mesh, geo, pos, col, mat, maxTri };
+}
+const tubesMain = makeTubes(1300);
+const spheres = makeSpheres(620);
+const facesMain = makeFaces(2400, 0.1);
+const facesHi = makeFaces(64, 0.42); facesHi.mesh.renderOrder = 3;
+const tubesSlice = makeTubes(2400);
+const sliceSolid = (() => {
+  const maxTri = 6000, geo = new THREE.BufferGeometry();
+  const pos = new THREE.BufferAttribute(new Float32Array(maxTri * 9), 3), nor = new THREE.BufferAttribute(new Float32Array(maxTri * 9), 3);
+  pos.setUsage(THREE.DynamicDrawUsage); nor.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position', pos); geo.setAttribute('normal', nor); geo.setDrawRange(0, 0);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false });
+  const mesh = new THREE.Mesh(geo, mat); mesh.frustumCulled = false; mesh.renderOrder = 4; scene.add(mesh);
+  return { mesh, geo, pos, nor, mat, maxTri };
+})();
+const sliceSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 40), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, transparent: true, opacity: 0.55, depthWrite: false }));
+sliceSphere.renderOrder = 4; sliceSphere.visible = false; scene.add(sliceSphere);
+const sliceSphereWire = new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.SphereGeometry(1, 24, 14)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 }));
+sliceSphereWire.visible = false; scene.add(sliceSphereWire);
+const pointsObj = (() => {
+  const max = 6000, geo = new THREE.BufferGeometry();
+  const pos = new THREE.BufferAttribute(new Float32Array(max * 3), 3), col = new THREE.BufferAttribute(new Float32Array(max * 3), 3);
+  pos.setUsage(THREE.DynamicDrawUsage); col.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position', pos); geo.setAttribute('color', col); geo.setDrawRange(0, 0);
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 31); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.6, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.beginPath(); g.arc(32, 32, 31, 0, Math.PI * 2); g.fill();
+  const mat = new THREE.PointsMaterial({ size: 0.05, sizeAttenuation: true, vertexColors: true, map: new THREE.CanvasTexture(c), transparent: true, alphaTest: 0.25, depthWrite: false });
+  const mesh = new THREE.Points(geo, mat); mesh.frustumCulled = false; scene.add(mesh);
+  return { mesh, geo, pos, col, mat };
+})();
+
+/* per-frame working buffers */
+const MAXV = 6000;
+const P4 = new Float64Array(MAXV * 4), P3 = new Float32Array(MAXV * 3), PF = new Float32Array(MAXV);
+const _p = new THREE.Vector3(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _m = new THREE.Matrix4(), _d = new THREE.Vector3(), _Y = new THREE.Vector3(0, 1, 0), _c = new THREE.Color();
+const ZERO_M = new THREE.Matrix4().makeScale(0, 0, 0);
+
+function transform(src, n, R, off = 0) {
+  for (let i = 0; i < n; i++) {
+    const x = src[i * 4], y = src[i * 4 + 1], z = src[i * 4 + 2], w = src[i * 4 + 3], o = (off + i) * 4;
+    for (let r = 0; r < 4; r++) P4[o + r] = R[r * 4] * x + R[r * 4 + 1] * y + R[r * 4 + 2] * z + R[r * 4 + 3] * w;
+  }
+}
+function project(start, n, persp) {
+  const d = state.d;
+  for (let i = start; i < start + n; i++) {
+    const w = P4[i * 4 + 3];
+    const f = persp ? d / Math.max(0.06, d - w) : 1;
+    PF[i] = f; P3[i * 3] = P4[i * 4] * f * SCALE; P3[i * 3 + 1] = P4[i * 4 + 1] * f * SCALE; P3[i * 3 + 2] = P4[i * 4 + 2] * f * SCALE;
+  }
+}
+const taper = f => Math.min(2.6, Math.pow(f, 0.9));
+function setTube(T, k, ax, ay, az, bx, by, bz, ra, rb, ca, oa, cb, ob) {
+  _d.set(bx - ax, by - ay, bz - az); const len = _d.length();
+  if (len < 1e-6) { T.mesh.setMatrixAt(k, ZERO_M); return; }
+  _d.multiplyScalar(1 / len); _q.setFromUnitVectors(_Y, _d);
+  _p.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2); _s.set(1, len, 1);
+  _m.compose(_p, _q, _s); T.mesh.setMatrixAt(k, _m);
+  const A = T.cA.array, B = T.cB.array, Rr = T.rAB.array;
+  A[k * 3] = ca[oa]; A[k * 3 + 1] = ca[oa + 1]; A[k * 3 + 2] = ca[oa + 2];
+  B[k * 3] = cb[ob]; B[k * 3 + 1] = cb[ob + 1]; B[k * 3 + 2] = cb[ob + 2];
+  Rr[k * 2] = ra; Rr[k * 2 + 1] = rb;
+}
+function commitTubes(T, n) { T.mesh.count = n; T.mesh.instanceMatrix.needsUpdate = true; T.cA.needsUpdate = T.cB.needsUpdate = T.rAB.needsUpdate = true; }
+function setGhost(T, on, opacity = 0.2) {
+  const want = on ? opacity : 1;
+  if (T.mat.opacity !== want || T.mat.transparent !== on) { T.mat.transparent = on; T.mat.opacity = want; T.mat.depthWrite = !on; T.mat.needsUpdate = true; }
+}
+function hideAll() {
+  tubesMain.mesh.count = 0; spheres.mesh.count = 0; facesMain.geo.setDrawRange(0, 0); facesHi.geo.setDrawRange(0, 0);
+  tubesSlice.mesh.count = 0; sliceSolid.geo.setDrawRange(0, 0); sliceSphere.visible = false; sliceSphereWire.visible = false; pointsObj.geo.setDrawRange(0, 0);
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const state = {
+  mode: 'project', obj: 'tesseract',
+  speeds: { build: [0, 0, 0, 0, 0, 0], project: reduce ? [0, 0, 0, 0, 0, 0] : [0.06, 0, 0, 0.24, 0, 0], slice: [0, 0, 0, 0, 0, 0], fold: [0, 0, 0, 0, 0, 0] },
+  proj: 'persp', d: 2.4, verts: true, faces: true, color: 'depth', highlight: -1,
+  slice: { c: 0, sweep: !reduce, phase: 0, preset: 'vertex', ghost: true, ext: [-1, 1], info: null },
+  build: { s: 4, playing: false, t: 0 },
+  fold: { u: reduce ? 0.62 : 0, loop: !reduce, t: 0, target: null },
+  paused: false, drag: '3d'
+};
+let R_anim = I4(), R_pre = I4();
+const R_tot = I4();
+if (reduce) { rotRows(R_anim, 0, 3, 0.55); rotRows(R_anim, 0, 1, 0.2); }
+const PLANES = [[0, 1], [0, 2], [1, 2], [0, 3], [1, 3], [2, 3]];
+const SPEED_K = Math.PI / 2; // slider 1 = quarter turn per second
+
+/* =====================================================================
+   Renderers per mode
+   ===================================================================== */
+function renderPolytope(o, R, persp, ghost) {
+  const meta = META[o.id];
+  transform(o.V, o.n, R);
+  project(0, o.n, persp);
+  const er = meta.edgeR * SCALE, vr = meta.vertR * SCALE;
+  const axis = state.mode === 'project' && state.color === 'axis' && o.EA;
+  for (let k = 0; k < o.nE; k++) {
+    const a = o.E[k * 2], b = o.E[k * 2 + 1];
+    let ca, oa, cb, ob;
+    if (axis) { ca = cb = AXL[o.EA[k]]; oa = ob = 0; } else { ca = cb = LUT_L; oa = dIdx(P4[a * 4 + 3]); ob = dIdx(P4[b * 4 + 3]); }
+    setTube(tubesMain, k, P3[a * 3], P3[a * 3 + 1], P3[a * 3 + 2], P3[b * 3], P3[b * 3 + 1], P3[b * 3 + 2], er * taper(PF[a]), er * taper(PF[b]), ca, oa, cb, ob);
+  }
+  commitTubes(tubesMain, o.nE);
+  setGhost(tubesMain, ghost, 0.2);
+  // vertices
+  const showV = !ghost && state.verts;
+  if (showV) {
+    for (let i = 0; i < o.n; i++) {
+      const r = vr * taper(PF[i]);
+      _p.set(P3[i * 3], P3[i * 3 + 1], P3[i * 3 + 2]); _s.set(r, r, r); _q.set(0, 0, 0, 1);
+      _m.compose(_p, _q, _s); spheres.mesh.setMatrixAt(i, _m);
+      const ci = dIdx(P4[i * 4 + 3]); _c.setRGB(LUT_L[ci], LUT_L[ci + 1], LUT_L[ci + 2]); spheres.mesh.setColorAt(i, _c);
+    }
+    spheres.mesh.count = o.n; spheres.mesh.instanceMatrix.needsUpdate = true; spheres.mesh.instanceColor.needsUpdate = true;
+  } else spheres.mesh.count = 0;
+  // faces
+  const showF = !ghost && state.faces && o.nF > 0;
+  if (showF) {
+    facesMain.mat.opacity = meta.faceA;
+    const fw = faceWBuf; for (let f = 0; f < o.nF; f++) { const poly = o.F[f]; let s = 0; for (let j = 0; j < poly.length; j++) s += P4[poly[j] * 4 + 3]; fw[f] = s / poly.length; }
+    const P = facesMain.pos.array, C = facesMain.col.array, nT = o.tris.length / 3;
+    let t = 0;
+    for (let i = 0; i < nT; i++) {
+      const f = o.triFace[i];
+      if (o.FC && state.highlight >= 0 && (o.FC[f][0] === state.highlight || o.FC[f][1] === state.highlight)) continue;
+      const ci = dIdx(fw[f]);
+      for (let j = 0; j < 3; j++) { const v = o.tris[i * 3 + j]; P[t * 9 + j * 3] = P3[v * 3]; P[t * 9 + j * 3 + 1] = P3[v * 3 + 1]; P[t * 9 + j * 3 + 2] = P3[v * 3 + 2]; C[t * 9 + j * 3] = LUT_L[ci]; C[t * 9 + j * 3 + 1] = LUT_L[ci + 1]; C[t * 9 + j * 3 + 2] = LUT_L[ci + 2]; }
+      t++;
+    }
+    facesMain.geo.setDrawRange(0, t * 3); facesMain.pos.needsUpdate = facesMain.col.needsUpdate = true;
+  } else facesMain.geo.setDrawRange(0, 0);
+  // highlighted cell (tesseract)
+  if (!ghost && o.FC && state.highlight >= 0) {
+    const col = AXL[state.highlight >> 1], P = facesHi.pos.array, C = facesHi.col.array, nT = o.tris.length / 3; let t = 0;
+    for (let i = 0; i < nT; i++) {
+      const f = o.triFace[i];
+      if (o.FC[f][0] !== state.highlight && o.FC[f][1] !== state.highlight) continue;
+      for (let j = 0; j < 3; j++) { const v = o.tris[i * 3 + j]; P[t * 9 + j * 3] = P3[v * 3]; P[t * 9 + j * 3 + 1] = P3[v * 3 + 1]; P[t * 9 + j * 3 + 2] = P3[v * 3 + 2]; C[t * 9 + j * 3] = col[0]; C[t * 9 + j * 3 + 1] = col[1]; C[t * 9 + j * 3 + 2] = col[2]; }
+      t++;
+    }
+    facesHi.geo.setDrawRange(0, t * 3); facesHi.pos.needsUpdate = facesHi.col.needsUpdate = true;
+  } else facesHi.geo.setDrawRange(0, 0);
+}
+const faceWBuf = new Float32Array(2000);
+
+function renderPoints(o, R, persp, ghost) {
+  transform(o.V, o.n, R); project(0, o.n, persp);
+  const P = pointsObj.pos.array, C = pointsObj.col.array;
+  for (let i = 0; i < o.n; i++) { P[i * 3] = P3[i * 3]; P[i * 3 + 1] = P3[i * 3 + 1]; P[i * 3 + 2] = P3[i * 3 + 2]; const ci = dIdx(P4[i * 4 + 3]); C[i * 3] = LUT_L[ci]; C[i * 3 + 1] = LUT_L[ci + 1]; C[i * 3 + 2] = LUT_L[ci + 2]; }
+  pointsObj.geo.setDrawRange(0, o.n); pointsObj.pos.needsUpdate = pointsObj.col.needsUpdate = true;
+  const want = ghost ? 0.22 : 1;
+  if (pointsObj.mat.opacity !== want) { pointsObj.mat.opacity = want; pointsObj.mat.alphaTest = ghost ? 0.02 : 0.25; pointsObj.mat.needsUpdate = true; }
+  pointsObj.mat.size = ghost ? 0.035 : 0.05;
+}
+
+/* ---------- build: point → segment → square → cube → tesseract ---------- */
+const BUILD_SRC = new Float64Array(16 * 4);
+function renderBuild(s) {
+  const t4 = getObj('tesseract');
+  const n = Math.min(4, Math.floor(s + 1e-9)), t = Math.max(0, s - n);
+  const sc = [0, 1, 2, 3].map(i => i < n ? 1 : (i === n ? t : 0));
+  let zeroMask = 0; sc.forEach((v, i) => { if (v < 1e-4) zeroMask |= 1 << i; });
+  for (let b = 0; b < 16; b++) for (let i = 0; i < 4; i++) BUILD_SRC[b * 4 + i] = (((b >> i) & 1) ? 0.5 : -0.5) * sc[i];
+  transform(BUILD_SRC, 16, R_tot); project(0, 16, state.proj === 'persp');
+  const er = 0.03 * SCALE, vr = 0.06 * SCALE;
+  let k = 0;
+  for (let e = 0; e < t4.nE; e++) {
+    const a = t4.E[e * 2], b = t4.E[e * 2 + 1], ax = t4.EA[e];
+    if ((a & zeroMask) || (b & zeroMask) || sc[ax] < 1e-4) continue;
+    setTube(tubesMain, k++, P3[a * 3], P3[a * 3 + 1], P3[a * 3 + 2], P3[b * 3], P3[b * 3 + 1], P3[b * 3 + 2], er * taper(PF[a]), er * taper(PF[b]), AXL[ax], 0, AXL[ax], 0);
+  }
+  commitTubes(tubesMain, k); setGhost(tubesMain, false);
+  let m = 0;
+  for (let i = 0; i < 16; i++) {
+    if (i & zeroMask) continue;
+    const r = vr * taper(PF[i]) * (s < 0.02 ? 1.6 : 1);
+    _p.set(P3[i * 3], P3[i * 3 + 1], P3[i * 3 + 2]); _s.set(r, r, r); _q.set(0, 0, 0, 1); _m.compose(_p, _q, _s);
+    spheres.mesh.setMatrixAt(m, _m); _c.setRGB(INK_L[0], INK_L[1], INK_L[2]); spheres.mesh.setColorAt(m, _c); m++;
+  }
+  spheres.mesh.count = m; spheres.mesh.instanceMatrix.needsUpdate = true; spheres.mesh.instanceColor.needsUpdate = true;
+  // swept faces
+  const P = facesMain.pos.array, C = facesMain.col.array; let tc = 0;
+  facesMain.mat.opacity = 0.11;
+  t4.F.forEach((poly, fi) => {
+    const fa = t4.FA[fi];
+    if (sc[fa[0]] < 1e-4 || sc[fa[1]] < 1e-4) return;
+    if ((poly[0] & zeroMask)) return;
+    const col = fa[1] === 3 ? AXL[3] : INK_L;
+    for (let q = 1; q < 3; q++) {
+      const tri = [poly[0], poly[q], poly[q + 1]];
+      for (let j = 0; j < 3; j++) { const v = tri[j]; P[tc * 9 + j * 3] = P3[v * 3]; P[tc * 9 + j * 3 + 1] = P3[v * 3 + 1]; P[tc * 9 + j * 3 + 2] = P3[v * 3 + 2]; C[tc * 9 + j * 3] = col[0]; C[tc * 9 + j * 3 + 1] = col[1]; C[tc * 9 + j * 3 + 2] = col[2]; }
+      tc++;
+    }
+  });
+  facesMain.geo.setDrawRange(0, tc * 3); facesMain.pos.needsUpdate = facesMain.col.needsUpdate = true;
+  return { n, t };
+}
+
+/* ---------- fold: Dalí net of 8 cubes ---------- */
+const FOLD_SRC = new Float64Array((64 + 192) * 4);
+const FOLD_COL = [3, 0, 0, 1, 1, 2, 2, 3];
+const CUBE_EDGES = [], CUBE_FACES = [];
+for (let q = 0; q < 8; q++) for (let b = 0; b < 3; b++) if (!((q >> b) & 1)) CUBE_EDGES.push([q, q | (1 << b)]);
+for (let b = 0; b < 3; b++) { const o = [0, 1, 2].filter(x => x !== b); for (let v = 0; v < 2; v++) { const f = (i, j) => (v << b) | (i << o[0]) | (j << o[1]); CUBE_FACES.push([f(0, 0), f(1, 0), f(1, 1), f(0, 1)]); } }
+function foldCorner(ci, q, u, out, off) {
+  const h = 0.5, th = u * Math.PI / 2, c = Math.cos(th), s = Math.sin(th), c2 = Math.cos(2 * th), s2 = Math.sin(2 * th);
+  const lv = k => ((q >> k) & 1) ? h : -h, l2 = ((q >> 2) & 1) ? 2 * h : 0;
+  const p = [0, 0, 0, 0];
+  if (ci === 0) { p[0] = lv(0); p[1] = lv(1); p[2] = lv(2); p[3] = -h; }
+  else if (ci <= 6) {
+    const k = (ci - 1) >> 1, sg = ((ci - 1) & 1) ? 1 : -1, ot = [0, 1, 2].filter(x => x !== k);
+    p[ot[0]] = lv(0); p[ot[1]] = lv(1); p[k] = sg * (h + l2 * c); p[3] = -h + l2 * s;
+  } else { p[0] = lv(0); p[2] = lv(1); p[1] = -(h + 2 * h * c) - l2 * c2; p[3] = -h + 2 * h * s + l2 * s2; }
+  p[1] += h * (1 - u);
+  for (let k = 0; k < 4; k++) out[off * 4 + k] = p[k];
+}
+function renderFold(u) {
+  for (let ci = 0; ci < 8; ci++) for (let q = 0; q < 8; q++) foldCorner(ci, q, u, FOLD_SRC, ci * 8 + q);
+  // shrunken face copies
+  for (let ci = 0; ci < 8; ci++) {
+    const cen = [0, 0, 0, 0]; for (let q = 0; q < 8; q++) for (let k = 0; k < 4; k++) cen[k] += FOLD_SRC[(ci * 8 + q) * 4 + k] / 8;
+    CUBE_FACES.forEach((f, fi) => f.forEach((q, j) => { const dst = 64 + ci * 24 + fi * 4 + j; for (let k = 0; k < 4; k++) FOLD_SRC[dst * 4 + k] = cen[k] + 0.86 * (FOLD_SRC[(ci * 8 + q) * 4 + k] - cen[k]); }));
+  }
+  transform(FOLD_SRC, 256, R_tot); project(0, 256, state.proj === 'persp');
+  const er = 0.02 * SCALE; let k = 0;
+  for (let ci = 0; ci < 8; ci++) CUBE_EDGES.forEach(([a0, b0]) => { const a = ci * 8 + a0, b = ci * 8 + b0; setTube(tubesMain, k++, P3[a * 3], P3[a * 3 + 1], P3[a * 3 + 2], P3[b * 3], P3[b * 3 + 1], P3[b * 3 + 2], er * taper(PF[a]), er * taper(PF[b]), INK_L, 0, INK_L, 0); });
+  commitTubes(tubesMain, k); setGhost(tubesMain, false); spheres.mesh.count = 0;
+  const P = facesMain.pos.array, C = facesMain.col.array; let t = 0;
+  facesMain.mat.opacity = 0.3;
+  for (let ci = 0; ci < 8; ci++) { const col = AXL[FOLD_COL[ci]]; for (let fi = 0; fi < 6; fi++) { const b = 64 + ci * 24 + fi * 4; for (const tri of [[b, b + 1, b + 2], [b, b + 2, b + 3]]) { for (let j = 0; j < 3; j++) { const v = tri[j]; P[t * 9 + j * 3] = P3[v * 3]; P[t * 9 + j * 3 + 1] = P3[v * 3 + 1]; P[t * 9 + j * 3 + 2] = P3[v * 3 + 2]; C[t * 9 + j * 3] = col[0]; C[t * 9 + j * 3 + 1] = col[1]; C[t * 9 + j * 3 + 2] = col[2]; } t++; } } }
+  facesMain.geo.setDrawRange(0, t * 3); facesMain.pos.needsUpdate = facesMain.col.needsUpdate = true;
+}
+
+/* ---------- slice: hyperplane w = c ---------- */
+const hull = new THREE.ConvexHull();
+const SP = []; for (let i = 0; i < 3000; i++) { const v = new THREE.Vector3(); v._i = i; SP.push(v); }
+const POLY_NAMES = { '3:4': 'тетраэдр', '3:8': 'октаэдр', '3:20': 'икосаэдр', '5:12': 'додекаэдр', '3:4|6:4': 'усечённый тетраэдр', '3:2|4:3': 'треугольная призма', '4:6|6:2': 'шестиугольная призма',
+  '3:8|4:6': 'кубооктаэдр', '4:6|6:8': 'усечённый октаэдр', '3:4|4:1': 'четырёхугольная пирамида', '4:5|5:2': 'пятиугольная призма', '3:6': 'треугольная бипирамида' };
+function plural(n, a, b, c) { const n10 = n % 10, n100 = n % 100; if (n10 === 1 && n100 !== 11) return a; if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return b; return c; }
+const fmt = (x, d = 2) => (x < -0.5 * Math.pow(10, -d) ? '−' : '') + Math.abs(x).toFixed(d).replace('.', ',');
+
+function renderSlice(o, c) {
+  const n = o.n; let np = 0; const seen = new Map();
+  const add = (x, y, z) => { const key = Math.round(x * 2e4) + ',' + Math.round(y * 2e4) + ',' + Math.round(z * 2e4); if (seen.has(key) || np >= SP.length) return; seen.set(key, 1); SP[np++].set(x, y, z); };
+  for (let k = 0; k < o.nE; k++) {
+    const a = o.E[k * 2], b = o.E[k * 2 + 1], wa = P4[a * 4 + 3] - c, wb = P4[b * 4 + 3] - c;
+    if (wa === 0 && wb === 0) { add(P4[a * 4], P4[a * 4 + 1], P4[a * 4 + 2]); add(P4[b * 4], P4[b * 4 + 1], P4[b * 4 + 2]); continue; }
+    if ((wa <= 0 && wb >= 0) || (wa >= 0 && wb <= 0)) {
+      const t = wa / (wa - wb);
+      add(P4[a * 4] + t * (P4[b * 4] - P4[a * 4]), P4[a * 4 + 1] + t * (P4[b * 4 + 1] - P4[a * 4 + 1]), P4[a * 4 + 2] + t * (P4[b * 4 + 2] - P4[a * 4 + 2]));
+    }
+  }
+  const ci = dIdx(c), colL = [LUT_L[ci], LUT_L[ci + 1], LUT_L[ci + 2]];
+  const bright = [Math.min(1, colL[0] * 1.15), Math.min(1, colL[1] * 1.15), Math.min(1, colL[2] * 1.15)];
+  sliceSolid.mat.color.setRGB(colL[0], colL[1], colL[2]);
+  const er = Math.max(0.011, META[o.id].edgeR * 0.9) * SCALE;
+  if (np < 4 || !nonPlanar(np)) { commitTubes(tubesSlice, 0); sliceSolid.geo.setDrawRange(0, 0); return np ? { name: np === 1 ? 'точка' : np === 2 ? 'отрезок' : 'плоский многоугольник', V: np, E: 0, F: 0 } : null; }
+  try { hull.setFromPoints(SP.slice(0, np)); } catch (e) { commitTubes(tubesSlice, 0); sliceSolid.geo.setDrawRange(0, 0); return null; }
+  const groups = [], P = sliceSolid.pos.array, N = sliceSolid.nor.array; let t = 0;
+  for (const f of hull.faces) {
+    const va = f.edge.tail().point, vb = f.edge.head().point, vc = f.edge.next.head().point;
+    if (!isFinite(f.normal.x)) continue;
+    let g = null;
+    for (const G of groups) if (G.nx * f.normal.x + G.ny * f.normal.y + G.nz * f.normal.z > 0.9995 && Math.abs(G.c - f.constant) < 1e-4) { g = G; break; }
+    if (!g) { g = { nx: f.normal.x, ny: f.normal.y, nz: f.normal.z, c: f.constant, tris: [] }; groups.push(g); }
+    g.tris.push([va._i, vb._i, vc._i]);
+    if (t < sliceSolid.maxTri) {
+      [va, vb, vc].forEach((v, j) => { P[t * 9 + j * 3] = v.x * SCALE; P[t * 9 + j * 3 + 1] = v.y * SCALE; P[t * 9 + j * 3 + 2] = v.z * SCALE; N[t * 9 + j * 3] = f.normal.x; N[t * 9 + j * 3 + 1] = f.normal.y; N[t * 9 + j * 3 + 2] = f.normal.z; });
+      t++;
+    }
+  }
+  sliceSolid.geo.setDrawRange(0, t * 3); sliceSolid.pos.needsUpdate = sliceSolid.nor.needsUpdate = true;
+  const edges = new Set(), sides = {}; let usedV = new Set();
+  groups.forEach(G => {
+    const cnt = new Map(), vs = new Set();
+    G.tris.forEach(tr => { for (let j = 0; j < 3; j++) { const a = tr[j], b = tr[(j + 1) % 3]; vs.add(a); const key = a < b ? a * 4096 + b : b * 4096 + a; cnt.set(key, (cnt.get(key) || 0) + 1); } });
+    cnt.forEach((v, key) => { if (v === 1) edges.add(key); });
+    vs.forEach(v => usedV.add(v));
+    sides[vs.size] = (sides[vs.size] || 0) + 1;
+  });
+  let k = 0; const lens = [];
+  edges.forEach(key => {
+    if (k >= tubesSlice.max) return;
+    const a = SP[Math.floor(key / 4096)], b = SP[key % 4096];
+    lens.push(a.distanceTo(b));
+    setTube(tubesSlice, k++, a.x * SCALE, a.y * SCALE, a.z * SCALE, b.x * SCALE, b.y * SCALE, b.z * SCALE, er, er, bright, 0, bright, 0);
+  });
+  commitTubes(tubesSlice, k);
+  const sig = Object.keys(sides).map(Number).sort((a, b) => a - b).map(s => s + ':' + sides[s]).join('|');
+  let name = POLY_NAMES[sig];
+  if (sig === '4:6') { const mn = Math.min(...lens), mx = Math.max(...lens); name = mx - mn < mx * 0.015 ? 'куб' : 'параллелепипед'; }
+  if (!name) name = `${groups.length}-гранник`;
+  return { name, V: usedV.size, E: edges.size, F: groups.length };
+}
+function nonPlanar(np) {
+  const p0 = SP[0]; let i1 = 0, best = 0;
+  for (let i = 1; i < np; i++) { const d = SP[i].distanceToSquared(p0); if (d > best) { best = d; i1 = i; } }
+  if (best < 1e-8) return false;
+  const p1 = SP[i1], u = new THREE.Vector3().subVectors(p1, p0).normalize(); let i2 = 0; best = 0;
+  const tmp = new THREE.Vector3();
+  for (let i = 0; i < np; i++) { tmp.subVectors(SP[i], p0); const along = tmp.dot(u); const d = tmp.lengthSq() - along * along; if (d > best) { best = d; i2 = i; } }
+  if (best < 1e-8) return false;
+  const nrm = new THREE.Vector3().subVectors(p1, p0).cross(tmp.subVectors(SP[i2], p0)).normalize();
+  for (let i = 0; i < np; i++) if (Math.abs(tmp.subVectors(SP[i], p0).dot(nrm)) > 1e-4) return true;
+  return false;
+}
+
+/* =====================================================================
+   Analogy panel: the same idea one dimension lower (2D canvas)
+   ===================================================================== */
+const ac = $('#analogy'), actx = ac.getContext('2d');
+let acW = 0, acH = 0, dpr = 1;
+function sizeAnalogy() {
+  const r = ac.getBoundingClientRect(); dpr = Math.min(window.devicePixelRatio || 1, 2);
+  acW = Math.max(1, Math.round(r.width * dpr)); acH = Math.max(1, Math.round(r.height * dpr));
+  if (ac.width !== acW || ac.height !== acH) { ac.width = acW; ac.height = acH; }
+}
+const R3 = new Float64Array(9);
+function sub3(R, out) { const idx = [0, 1, 3]; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) out[i * 3 + j] = R[idx[i] * 4 + idx[j]]; if (!orthonormalize(out, 3)) { out.fill(0); out[0] = out[4] = out[8] = 1; } }
+function mul3(a, b, o) { const t = new Float64Array(9); for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { let s = 0; for (let k = 0; k < 3; k++) s += a[i * 3 + k] * b[k * 3 + j]; t[i * 3 + j] = s; } o.set(t); }
+const ap = (M, v) => [M[0] * v[0] + M[1] * v[1] + M[2] * v[2], M[3] * v[0] + M[4] * v[1] + M[5] * v[2], M[6] * v[0] + M[7] * v[1] + M[8] * v[2]];
+const VIEW = { az: -0.62, el: 0.36, F: 6 };
+function view3(p, cx, cy, R) {
+  const ca = Math.cos(VIEW.az), sa = Math.sin(VIEW.az), ce = Math.cos(VIEW.el), se = Math.sin(VIEW.el);
+  const x1 = p[0] * ca - p[1] * sa, y1 = p[0] * sa + p[1] * ca, z1 = p[2];
+  const up = z1 * ce + y1 * se, depth = y1 * ce - z1 * se, k = VIEW.F / (VIEW.F + depth);
+  return [cx + x1 * k * R, cy - up * k * R, depth];
+}
+function line(ctx, a, b, c1, c2, w) {
+  if (c1 === c2) ctx.strokeStyle = c1; else { const g = ctx.createLinearGradient(a[0], a[1], b[0], b[1]); g.addColorStop(0, c1); g.addColorStop(1, c2); ctx.strokeStyle = g; }
+  ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+}
+function polyPath(ctx, pts) { ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); }
+function polygonName(pts) {
+  const n = pts.length;
+  if (n === 4) {
+    const L = [], A = [];
+    for (let i = 0; i < 4; i++) { const a = pts[i], b = pts[(i + 1) % 4], c = pts[(i + 2) % 4]; L.push(Math.hypot(b[0] - a[0], b[1] - a[1])); const u = [a[0] - b[0], a[1] - b[1]], v = [c[0] - b[0], c[1] - b[1]]; A.push(Math.abs(u[0] * v[0] + u[1] * v[1]) / (Math.hypot(...u) * Math.hypot(...v) + 1e-9)); }
+    if (A.every(x => x < 0.03)) return Math.max(...L) - Math.min(...L) < Math.max(...L) * 0.03 ? 'квадрат' : 'прямоугольник';
+    return 'четырёхугольник';
+  }
+  return ({ 3: 'треугольник', 5: 'пятиугольник', 6: 'шестиугольник', 7: 'семиугольник', 8: 'восьмиугольник', 10: 'десятиугольник' })[n] || `${n}-угольник`;
+}
+const PRESET3 = { cell: 'face', face: 'edge', edge: 'vertex', vertex: 'vertex' };
+let anLabels = { L: '', R: '', cap: '' };
+function setAnText(L, R, cap) {
+  if (anLabels.L !== L) { $('#anL').textContent = L; anLabels.L = L; }
+  if (anLabels.R !== R) { $('#anR').textContent = R; anLabels.R = R; }
+  if (anLabels.cap !== cap) { $('#anCap').textContent = cap; anLabels.cap = cap; }
+}
+function drawAnalogy() {
+  if (state.mode === 'build' || !acW) return;
+  const ctx = actx, W = acW, H = acH;
+  ctx.clearRect(0, 0, W, H); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const LW = Math.round(W * 0.56), gap = 10 * dpr, RX = LW + gap, RW = W - RX;
+  // flatland frame (right)
+  ctx.fillStyle = hexA(TOK.chip, 1); ctx.strokeStyle = hexA(TOK.line, 1); ctx.lineWidth = 1 * dpr;
+  roundRect(ctx, RX, 0, RW, H, 8 * dpr); ctx.fill(); ctx.stroke();
+  const rcx = RX + RW / 2, rcy = H / 2;
+  const meta = META[state.obj];
+  const anKey = state.mode === 'fold' ? 'cube' : meta.analog, P = AN[anKey];
+  const an = state.mode === 'fold' ? META.tesseract.an : meta.an;
+  const axisCol = state.mode === 'project' && state.color === 'axis' && anKey === 'cube' && state.obj === 'tesseract';
+  const AXC = [TOK.x, TOK.y, TOK.w];
+
+  if (state.mode === 'fold') { drawFoldAnalogy(ctx, LW, H, RX, RW, rcx, rcy); return; }
+  if (state.mode === 'project') sub3(R_tot, R3);
+  else { sub3(R_anim, R3); const n3 = meta.points ? [0, 0, 1] : P.dirs[PRESET3[state.slice.preset]]; mul3(R3, rotToAxis(n3, 2, 3), R3); }
+  const V = P.V.map(v => ap(R3, v));
+  const persp = state.proj === 'persp' && state.mode === 'project', d = state.d;
+  const lcx = LW / 2, lcy = H * 0.56, LR = Math.min(LW, H) * 0.25;
+  const thin = P.E.length > 60 ? 1.1 : 1.7;
+  if (state.mode === 'project') {
+    // floor with the shadow
+    const z0 = -1.3, fl = [[-1.55, -1.55, z0], [1.55, -1.55, z0], [1.55, 1.55, z0], [-1.55, 1.55, z0]].map(p => view3(p, lcx, lcy, LR));
+    ctx.fillStyle = hexA(TOK.line, TOK.dark ? 0.55 : 0.8); polyPath(ctx, fl); ctx.fill();
+    const proj2 = v => { const f = persp ? d / Math.max(0.06, d - v[2]) : 1; return [v[0] * f, v[1] * f]; };
+    let mx = 0; const S2 = V.map(v => { const q = proj2(v); mx = Math.max(mx, Math.abs(q[0]), Math.abs(q[1])); return q; });
+    const k = Math.min(1, 1.35 / (mx || 1));
+    P.E.forEach(([a, b], ei) => {
+      const A = view3([S2[a][0] * k, S2[a][1] * k, z0], lcx, lcy, LR), B = view3([S2[b][0] * k, S2[b][1] * k, z0], lcx, lcy, LR);
+      line(ctx, A, B, axisCol ? hexA(AXC[P.EA[ei]], .75) : depthCSS(V[a][2], .75), axisCol ? hexA(AXC[P.EA[ei]], .75) : depthCSS(V[b][2], .75), 1.2 * dpr);
+    });
+    // light source
+    if (persp) {
+      const L = view3([0, 0, d], lcx, lcy, LR);
+      const ly = Math.max(8 * dpr, L[1]);
+      ctx.fillStyle = hexA(TOK.accent, 0.18); ctx.beginPath(); ctx.arc(L[0], ly, 9 * dpr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = TOK.accent; ctx.beginPath(); ctx.arc(L[0], ly, 3.5 * dpr, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.strokeStyle = hexA(TOK.accent, 0.7); ctx.lineWidth = 1.2 * dpr;
+      for (const x of [-0.9, 0, 0.9]) { const A = view3([x, 0, 2.2], lcx, lcy, LR), B = view3([x, 0, 1.55], lcx, lcy, LR); ctx.beginPath(); ctx.moveTo(A[0], Math.max(4 * dpr, A[1])); ctx.lineTo(B[0], B[1]); ctx.stroke(); }
+    }
+    // the 3D object
+    const order = P.E.map((e, i) => i).sort((i, j) => (view3(V[P.E[j][0]], 0, 0, 1)[2] + view3(V[P.E[j][1]], 0, 0, 1)[2]) - (view3(V[P.E[i][0]], 0, 0, 1)[2] + view3(V[P.E[i][1]], 0, 0, 1)[2]));
+    order.forEach(ei => { const [a, b] = P.E[ei]; const A = view3(V[a], lcx, lcy, LR), B = view3(V[b], lcx, lcy, LR); line(ctx, A, B, axisCol ? AXC[P.EA[ei]] : depthCSS(V[a][2]), axisCol ? AXC[P.EA[ei]] : depthCSS(V[b][2]), thin * dpr); });
+    // flatlander's view
+    const RR = Math.min(RW, H) * 0.42 / Math.max(1, mx);
+    P.E.forEach(([a, b], ei) => { const A = [rcx + S2[a][0] * RR, rcy - S2[a][1] * RR], B = [rcx + S2[b][0] * RR, rcy - S2[b][1] * RR]; line(ctx, A, B, axisCol ? AXC[P.EA[ei]] : depthCSS(V[a][2]), axisCol ? AXC[P.EA[ei]] : depthCSS(V[b][2]), thin * dpr); });
+    const cap = meta.noAnalog ? 'У 24-ячейника нет трёхмерного аналога, для сравнения показан куб. ' : '';
+    setAnText(`Мы видим ${an[1]}`, 'Житель плоскости видит тень', cap + `Ступенью ниже: свет над ${anKey === 'sphere' ? 'сферой' : an[0] + 'ом'} отбрасывает тень на плоскость. Её житель видит только тень, как мы видим только тень 4D-фигуры. Повороты связаны с основной моделью.`);
+    return;
+  }
+  // slice
+  const ext = state.slice.ext; let zmin = Infinity, zmax = -Infinity; V.forEach(v => { zmin = Math.min(zmin, v[2]); zmax = Math.max(zmax, v[2]); });
+  const frac = (state.slice.c - ext[0]) / Math.max(1e-6, ext[1] - ext[0]);
+  const cz = meta.points ? state.slice.c : zmin + frac * (zmax - zmin);
+  let poly = [];
+  if (P.sphere) { const r2 = 1 - cz * cz; if (r2 > 0) { const r = Math.sqrt(r2); for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2; poly.push([r * Math.cos(a), r * Math.sin(a)]); } } }
+  else if (frac >= 0 && frac <= 1) {
+    const pts = [];
+    P.E.forEach(([a, b]) => { const za = V[a][2] - cz, zb = V[b][2] - cz; if ((za <= 0 && zb >= 0) || (za >= 0 && zb <= 0)) { const t = Math.abs(za - zb) < 1e-12 ? 0 : za / (za - zb); const p = [V[a][0] + t * (V[b][0] - V[a][0]), V[a][1] + t * (V[b][1] - V[a][1])]; if (!pts.some(q => Math.hypot(q[0] - p[0], q[1] - p[1]) < 1e-5)) pts.push(p); } });
+    if (pts.length >= 3) { const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length; pts.sort((p, q) => Math.atan2(p[1] - cy, p[0] - cx) - Math.atan2(q[1] - cy, q[0] - cx)); poly = pts; }
+  }
+  // object (behind), plane, polygon, object front
+  P.E.forEach(([a, b]) => { const A = view3(V[a], lcx, lcy, LR), B = view3(V[b], lcx, lcy, LR); line(ctx, A, B, depthCSS(V[a][2], .55), depthCSS(V[b][2], .55), thin * dpr); });
+  const pl = [[-1.45, -1.45, cz], [1.45, -1.45, cz], [1.45, 1.45, cz], [-1.45, 1.45, cz]].map(p => view3(p, lcx, lcy, LR));
+  ctx.fillStyle = depthCSS(cz, TOK.dark ? 0.16 : 0.14); polyPath(ctx, pl); ctx.fill();
+  ctx.strokeStyle = depthCSS(cz, 0.45); ctx.lineWidth = 1 * dpr; ctx.stroke();
+  if (poly.length >= 3) {
+    const pp = poly.map(p => view3([p[0], p[1], cz], lcx, lcy, LR));
+    ctx.fillStyle = depthCSS(cz, 0.55); polyPath(ctx, pp); ctx.fill(); ctx.strokeStyle = depthCSS(cz, 1); ctx.lineWidth = 2 * dpr; ctx.stroke();
+  }
+  P.E.forEach(([a, b]) => { if (V[a][2] < cz - 1e-9 && V[b][2] < cz - 1e-9) return; const A = view3(V[a], lcx, lcy, LR), B = view3(V[b], lcx, lcy, LR); line(ctx, A, B, depthCSS(V[a][2]), depthCSS(V[b][2]), thin * dpr); });
+  // flatlander: ghost shadow + the polygon
+  const RR = Math.min(RW, H) * 0.36;
+  if (state.slice.ghost) P.E.forEach(([a, b]) => line(ctx, [rcx + V[a][0] * RR, rcy - V[a][1] * RR], [rcx + V[b][0] * RR, rcy - V[b][1] * RR], hexA(TOK.muted, .28), hexA(TOK.muted, .28), 1 * dpr));
+  let pname = 'пусто';
+  if (poly.length >= 3) {
+    const pp = poly.map(p => [rcx + p[0] * RR, rcy - p[1] * RR]);
+    ctx.fillStyle = depthCSS(cz, 0.7); polyPath(ctx, pp); ctx.fill(); ctx.strokeStyle = depthCSS(cz, 1); ctx.lineWidth = 2 * dpr; ctx.stroke();
+    pname = P.sphere ? 'круг' : polygonName(poly);
+  }
+  const cap = meta.noAnalog ? 'У 24-ячейника нет трёхмерного аналога, для сравнения показан куб. ' : '';
+  setAnText(`${an[2]} пересекает плоскость`, `Срез: ${pname}`, cap + 'Ступенью ниже: житель плоскости видит только многоугольник, и тот меняет форму, пока тело проходит сквозь плоскость. Мы так же видим только трёхмерный срез 4D-фигуры.');
+}
+function drawFoldAnalogy(ctx, LW, H, RX, RW, rcx, rcy) {
+  const u = state.fold.u, h = 0.5, th = u * Math.PI / 2, c = Math.cos(th), s = Math.sin(th), c2 = Math.cos(2 * th), s2 = Math.sin(2 * th);
+  const sq = []; const cols = [TOK.w, TOK.x, TOK.x, TOK.y, TOK.y, TOK.w];
+  for (let ci = 0; ci < 6; ci++) {
+    const pts = [];
+    for (const q of [0, 1, 3, 2]) {
+      const lv = k => ((q >> k) & 1) ? h : -h, l2 = ((q >> 1) & 1) ? 2 * h : 0; const p = [0, 0, 0];
+      if (ci === 0) { p[0] = lv(0); p[1] = lv(1); p[2] = -h; }
+      else if (ci <= 4) { const k = (ci - 1) >> 1, sg = ((ci - 1) & 1) ? 1 : -1, ot = k === 0 ? 1 : 0; p[ot] = lv(0); p[k] = sg * (h + l2 * c); p[2] = -h + l2 * s; }
+      else { p[0] = lv(0); p[1] = -(h + 2 * h * c) - l2 * c2; p[2] = -h + 2 * h * s + l2 * s2; }
+      p[1] += h * (1 - u);
+      pts.push(p);
+    }
+    sq.push(pts);
+  }
+  sub3(R_anim, R3);
+  const SQ = sq.map(p => p.map(v => ap(R3, v)));
+  const lcx = LW / 2, lcy = H * 0.52, LR = Math.min(LW, H) * 0.2;
+  const order = SQ.map((p, i) => [i, p.reduce((a, v) => a + view3(v, 0, 0, 1)[2], 0)]).sort((a, b) => b[1] - a[1]);
+  order.forEach(([i]) => { const pp = SQ[i].map(v => view3(v, lcx, lcy, LR)); ctx.fillStyle = hexA(cols[i], 0.32); polyPath(ctx, pp); ctx.fill(); ctx.strokeStyle = hexA(TOK.ink, 0.75); ctx.lineWidth = 1.4 * dpr; ctx.stroke(); });
+  const d = state.d, persp = state.proj === 'persp';
+  const pr = v => { const f = persp ? d / Math.max(0.06, d - v[2]) : 1; return [v[0] * f, v[1] * f]; };
+  const all = SQ.map(p => p.map(pr)); let mx = 0; all.forEach(p => p.forEach(q => { mx = Math.max(mx, Math.abs(q[0]), Math.abs(q[1])); }));
+  const RR = Math.min(RW, H) * 0.44 / Math.max(1, mx);
+  const order2 = SQ.map((p, i) => [i, p.reduce((a, v) => a + v[2], 0)]).sort((a, b) => a[1] - b[1]);
+  order2.forEach(([i]) => { const pp = all[i].map(q => [rcx + q[0] * RR, rcy - q[1] * RR]); ctx.fillStyle = hexA(cols[i], 0.3); polyPath(ctx, pp); ctx.fill(); ctx.strokeStyle = hexA(TOK.ink, 0.7); ctx.lineWidth = 1.2 * dpr; ctx.stroke(); });
+  setAnText('Квадраты складываются в куб', 'Вид из плоскости', 'Ступенью ниже: шесть квадратов складываются в куб, поворачиваясь в третье измерение, недоступное жителю плоскости. Он видит, как квадраты сплющиваются и растут.');
+}
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+/* ---------- axis gizmo ---------- */
+const gz = $('#gizmo'), gctx = gz.getContext('2d');
+function drawGizmo() {
+  const dp = Math.min(window.devicePixelRatio || 1, 2), S = 112 * dp;
+  if (gz.width !== S) { gz.width = S; gz.height = S; }
+  const g = gctx; g.clearRect(0, 0, S, S);
+  const c = S / 2, L = 34 * dp, e = camera.matrixWorldInverse.elements, names = ['X', 'Y', 'Z', 'W'], cols = [TOK.x, TOK.y, TOK.z, TOK.w];
+  g.fillStyle = hexA(TOK.panel, 0.72); g.beginPath(); g.arc(c, c, 50 * dp, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = hexA(TOK.line, 1); g.lineWidth = 1 * dp; g.stroke();
+  const it = [0, 1, 2, 3].map(i => { const x = R_tot[i], y = R_tot[4 + i], z = R_tot[8 + i]; return { i, sx: e[0] * x + e[4] * y + e[8] * z, sy: e[1] * x + e[5] * y + e[9] * z, sz: e[2] * x + e[6] * y + e[10] * z, l: Math.hypot(x, y, z) }; });
+  it.sort((a, b) => a.sz - b.sz);
+  g.font = `600 ${11 * dp}px ${MONO}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  it.forEach(a => {
+    const x = c + a.sx * L, y = c - a.sy * L;
+    g.globalAlpha = 0.35 + 0.65 * Math.min(1, a.l);
+    if (a.l < 0.14) {
+      g.strokeStyle = cols[a.i]; g.lineWidth = 1.6 * dp; g.beginPath(); g.arc(c, c, 6 * dp, 0, Math.PI * 2); g.stroke();
+      g.fillStyle = cols[a.i]; g.beginPath(); g.arc(c, c, 2 * dp, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = 1; g.fillText(names[a.i], c + 12 * dp, c + 12 * dp);
+    } else {
+      g.strokeStyle = cols[a.i]; g.lineWidth = 2.4 * dp; g.lineCap = 'round'; g.beginPath(); g.moveTo(c, c); g.lineTo(x, y); g.stroke();
+      g.fillStyle = cols[a.i]; g.beginPath(); g.arc(x, y, 8 * dp, 0, Math.PI * 2); g.fill();
+      g.globalAlpha = 1; g.fillStyle = '#fff'; g.fillText(names[a.i], x, y + 0.5 * dp);
+    }
+  });
+  g.globalAlpha = 1;
+}
+
+/* =====================================================================
+   UI wiring
+   ===================================================================== */
+const objChips = $('#objChips');
+ORDER.forEach(id => { const b = document.createElement('button'); b.dataset.obj = id; b.setAttribute('aria-pressed', 'false'); b.innerHTML = `<b>${META[id].name}</b><span>${META[id].chip}</span>`; objChips.appendChild(b); });
+
+function setPressed(container, attr, val) { $$(`[data-${attr}]`, container).forEach(b => b.setAttribute('aria-pressed', String(b.dataset[attr] === String(val)))); }
+function updateVisibility() {
+  $$('[data-modes]').forEach(el => {
+    let on = el.dataset.modes.split(' ').includes(state.mode);
+    if (on && el.dataset.objs) on = el.dataset.objs.split(' ').includes(state.obj);
+    if (on && el.dataset.objsNot) on = !el.dataset.objsNot.split(' ').includes(state.obj);
+    el.hidden = !on;
+  });
+  $$('.tabs [data-mode]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === state.mode)));
+  $('#distCtl').hidden = state.proj !== 'persp';
+  const showAxis = state.mode === 'build' || (state.mode === 'project' && state.color === 'axis' && state.obj === 'tesseract');
+  $('#legAxis').hidden = !showAxis;
+  $('#legDepth').hidden = showAxis || state.mode === 'fold';
+  $('#legCells').hidden = state.mode !== 'fold';
+  $('#stageTitle').hidden = state.mode !== 'build';
+  $('#sliceTag').hidden = state.mode !== 'slice';
+}
+function syncSpeeds() {
+  const sp = state.speeds[state.mode];
+  for (let i = 0; i < 6; i++) { $('#sp' + i).value = sp[i]; $('#so' + i).textContent = fmt(sp[i]); }
+}
+function syncAll() {
+  updateVisibility(); syncSpeeds();
+  setPressed(objChips, 'obj', state.obj); setPressed($('#projSeg'), 'proj', state.proj); setPressed($('#colorSeg'), 'color', state.color);
+  setPressed($('#presetSeg'), 'preset', state.slice.preset); setPressed($('#cellChips'), 'cell', state.highlight); setPressed($('#dragSeg'), 'drag', state.drag);
+  $('#dist').value = state.d; $('#distOut').textContent = fmt(state.d);
+  $('#vertChk').checked = state.verts; $('#faceChk').checked = state.faces; $('#ghostChk').checked = state.slice.ghost;
+  $('#sweepBtn').textContent = state.slice.sweep ? 'Остановить проход' : 'Запустить проход';
+  $('#foldPlay').textContent = state.fold.loop ? 'Остановить' : 'Повторять';
+  updateFacts(); updatePreset();
+}
+function updateFacts() {
+  const m = META[state.obj];
+  $('#fName').textContent = m.name; $('#fSch').textContent = m.points ? m.alt : `${m.sch} · ${m.alt}`; $('#fDesc').textContent = m.desc;
+  if (m.points) { $('#fTableWrap').hidden = true; $('#fEuler').textContent = 'Объём самой гиперсферы 2π²r³ ≈ 19,74 r³; объём 4-шара внутри ½π²r⁴ ≈ 4,93 r⁴.'; return; }
+  $('#fTableWrap').hidden = false;
+  const [v, e, f, c] = m.fvec; $('#fV').textContent = v; $('#fE').textContent = e; $('#fF').textContent = f; $('#fC').textContent = c;
+  $('#fEuler').textContent = `Эйлер для 4D: ${v} − ${e} + ${f} − ${c} = ${v - e + f - c}`;
+}
+function updatePreset() {
+  const o = getObj(state.obj);
+  R_pre = (state.mode === 'slice' && !o.points) ? rotToAxis(o.dirs[state.slice.preset], 3, 4) : I4();
+}
+function setObj(id) {
+  state.obj = id; const m = META[id];
+  state.verts = !!m.verts; state.faces = !!m.faces;
+  if (id !== 'tesseract') { state.highlight = -1; state.color = 'depth'; }
+  syncAll(); camTween();
+}
+let camT = null;
+function camWant() {
+  const aspect = Math.max(0.3, stage.clientWidth / Math.max(1, stage.clientHeight));
+  const base = { build: 7.0, project: state.obj === 'sphere' ? 7.4 : 7.8, slice: 6.4, fold: 11.0 }[state.mode];
+  return base * Math.max(1, Math.pow(1 / aspect, 0.85));
+}
+function camTween() { camT = { from: camera.position.distanceTo(controls.target), to: camWant(), t: 0 }; }
+function setMode(mode) {
+  if (mode === state.mode) return;
+  state.mode = mode; R_anim = I4();
+  if (mode === 'build') { state.build.s = 0; state.build.t = 0; state.build.playing = !reduce; if (reduce) state.build.s = 4; }
+  if (mode === 'slice') { if (state.obj === 'tesseract') state.slice.preset = 'vertex'; state.slice.sweep = !reduce; state.slice.phase = -Math.PI / 2; }
+  if (mode === 'fold') { state.fold.t = 0; state.fold.u = reduce ? 0.62 : 0; state.fold.loop = !reduce; state.fold.target = null; }
+  syncAll(); camTween();
+}
+$$('.tabs [data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+objChips.addEventListener('click', e => { const b = e.target.closest('[data-obj]'); if (b) setObj(b.dataset.obj); });
+for (let i = 0; i < 6; i++) $('#sp' + i).addEventListener('input', e => { state.speeds[state.mode][i] = +e.target.value; $('#so' + i).textContent = fmt(+e.target.value); });
+$('#rotStop').addEventListener('click', () => { state.speeds[state.mode] = [0, 0, 0, 0, 0, 0]; syncSpeeds(); });
+$('#rotReset').addEventListener('click', () => { R_anim = I4(); });
+$('#projSeg').addEventListener('click', e => { const b = e.target.closest('[data-proj]'); if (!b) return; state.proj = b.dataset.proj; syncAll(); });
+$('#colorSeg').addEventListener('click', e => { const b = e.target.closest('[data-color]'); if (!b) return; state.color = b.dataset.color; syncAll(); });
+$('#dist').addEventListener('input', e => { state.d = +e.target.value; $('#distOut').textContent = fmt(state.d); });
+$('#vertChk').addEventListener('change', e => { state.verts = e.target.checked; });
+$('#faceChk').addEventListener('change', e => { state.faces = e.target.checked; });
+$('#cellChips').addEventListener('click', e => { const b = e.target.closest('[data-cell]'); if (!b) return; state.highlight = +b.dataset.cell; setPressed($('#cellChips'), 'cell', state.highlight); });
+$('#presetSeg').addEventListener('click', e => { const b = e.target.closest('[data-preset]'); if (!b) return; state.slice.preset = b.dataset.preset; setPressed($('#presetSeg'), 'preset', state.slice.preset); updatePreset(); });
+$('#sliceC').addEventListener('input', e => { state.slice.c = +e.target.value; state.slice.sweep = false; $('#sweepBtn').textContent = 'Запустить проход'; });
+$('#sweepBtn').addEventListener('click', () => {
+  state.slice.sweep = !state.slice.sweep;
+  if (state.slice.sweep) { const [a, b] = state.slice.ext, mid = (a + b) / 2, amp = (b - a) / 2 + 0.02; state.slice.phase = Math.asin(Math.max(-1, Math.min(1, (state.slice.c - mid) / amp))); state.paused = false; syncPause(); }
+  $('#sweepBtn').textContent = state.slice.sweep ? 'Остановить проход' : 'Запустить проход';
+});
+$('#ghostChk').addEventListener('change', e => { state.slice.ghost = e.target.checked; });
+$('#buildS').addEventListener('input', e => { state.build.s = +e.target.value; state.build.playing = false; });
+$('#buildTicks').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; state.build.s = +b.dataset.s; state.build.playing = false; });
+$('#buildPlay').addEventListener('click', () => { state.build.s = 0; state.build.t = 0; state.build.playing = true; state.paused = false; syncPause(); });
+$('#foldU').addEventListener('input', e => { state.fold.u = +e.target.value; state.fold.loop = false; state.fold.target = null; $('#foldPlay').textContent = 'Повторять'; });
+$('#foldPlay').addEventListener('click', () => { state.fold.loop = !state.fold.loop; state.fold.target = null; if (state.fold.loop) { state.fold.t = state.fold.u * 3.5; state.paused = false; syncPause(); } $('#foldPlay').textContent = state.fold.loop ? 'Остановить' : 'Повторять'; });
+$('#foldIn').addEventListener('click', () => { state.fold.loop = false; state.fold.target = 1; state.paused = false; syncPause(); $('#foldPlay').textContent = 'Повторять'; });
+$('#foldOutBtn').addEventListener('click', () => { state.fold.loop = false; state.fold.target = 0; state.paused = false; syncPause(); $('#foldPlay').textContent = 'Повторять'; });
+$('#dragSeg').addEventListener('click', e => { const b = e.target.closest('[data-drag]'); if (!b) return; state.drag = b.dataset.drag; controls.enableRotate = state.drag === '3d'; setPressed($('#dragSeg'), 'drag', state.drag); });
+function syncPause() {
+  $('#pauseBtn').setAttribute('aria-label', state.paused ? 'Продолжить' : 'Пауза'); $('#pauseBtn').title = state.paused ? 'Продолжить' : 'Пауза';
+  $('#pauseIco').innerHTML = state.paused ? '<path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/>' : '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+}
+$('#pauseBtn').addEventListener('click', () => { state.paused = !state.paused; syncPause(); });
+$('#resetBtn').addEventListener('click', () => { R_anim = I4(); controls.target.set(0, 0, 0); camera.position.copy(CAM_DIR).multiplyScalar(camera.position.length()); camTween(); });
+
+const TRY = {
+  xw: () => { setObj('tesseract'); state.proj = 'persp'; state.speeds.project = [0, 0, 0, 0.3, 0, 0]; state.highlight = -1; R_anim = I4(); },
+  r3: () => { setObj('tesseract'); state.speeds.project = [0.22, 0, 0.14, 0, 0, 0]; R_anim = I4(); },
+  follow: () => { setObj('tesseract'); state.proj = 'persp'; state.highlight = 6; state.speeds.project = [0, 0, 0, 0.22, 0, 0]; R_anim = I4(); },
+  double: () => { setObj('tesseract'); state.speeds.project = [0.3, 0, 0, 0, 0, 0.3]; R_anim = I4(); },
+  ortho: () => { setObj('tesseract'); state.proj = 'ortho'; state.speeds.project = [0, 0, 0, 0.25, 0, 0]; R_anim = I4(); },
+  '600': () => { setObj('c600'); state.proj = 'persp'; state.speeds.project = [0.16, 0, 0, 0, 0, 0.16]; R_anim = I4(); },
+  vfirst: () => { setObj('tesseract'); state.slice.preset = 'vertex'; state.slice.sweep = true; state.slice.phase = -Math.PI / 2; state.speeds.slice = [0, 0, 0, 0, 0, 0]; R_anim = I4(); },
+  cfirst: () => { setObj('tesseract'); state.slice.preset = 'cell'; state.slice.sweep = true; state.slice.phase = -Math.PI / 2; state.speeds.slice = [0, 0, 0, 0, 0, 0]; R_anim = I4(); },
+  efirst: () => { setObj('tesseract'); state.slice.preset = 'edge'; state.slice.sweep = true; state.slice.phase = -Math.PI / 2; state.speeds.slice = [0, 0, 0, 0, 0, 0]; R_anim = I4(); },
+  sphere: () => { setObj('sphere'); state.slice.sweep = true; state.slice.phase = -Math.PI / 2; state.speeds.slice = [0, 0, 0, 0, 0, 0]; R_anim = I4(); },
+  spin: () => { setObj('tesseract'); state.slice.preset = 'cell'; state.slice.sweep = false; state.slice.c = 0.12; state.speeds.slice = [0, 0, 0, 0.12, 0, 0]; R_anim = I4(); },
+  c24: () => { setObj('c24'); state.slice.preset = 'cell'; state.slice.sweep = true; state.slice.phase = -Math.PI / 2; state.speeds.slice = [0, 0, 0, 0, 0, 0]; R_anim = I4(); }
+};
+$$('[data-try]').forEach(b => b.addEventListener('click', () => { TRY[b.dataset.try](); state.paused = false; syncPause(); syncAll(); }));
+
+/* ---------- 4D drag ---------- */
+let drag4 = null;
+stage.addEventListener('pointerdown', e => {
+  if (e.target !== canvas) return;
+  if (state.drag === '4d' || e.shiftKey) {
+    drag4 = { id: e.pointerId, x: e.clientX, y: e.clientY }; controls.enabled = false;
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    e.stopPropagation(); e.preventDefault();
+  }
+}, true);
+canvas.addEventListener('pointermove', e => {
+  if (!drag4 || e.pointerId !== drag4.id) return;
+  const dx = e.clientX - drag4.x, dy = e.clientY - drag4.y; drag4.x = e.clientX; drag4.y = e.clientY;
+  const m = camera.matrixWorld.elements;
+  rotPlaneLeft(R_anim, [m[0], m[1], m[2], 0], [0, 0, 0, 1], dx * 0.009);
+  rotPlaneLeft(R_anim, [m[4], m[5], m[6], 0], [0, 0, 0, 1], -dy * 0.009);
+  orthonormalize(R_anim, 4);
+});
+const endDrag = e => { if (drag4 && e.pointerId === drag4.id) { drag4 = null; controls.enabled = true; } };
+canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+if (matchMedia('(pointer: coarse)').matches) $('#hint').textContent = 'Включите «Поворот в 4D» и тяните пальцем';
+
+/* ---------- theme ---------- */
+function applyTheme() {
+  readTokens();
+  const b = hexRgb(TOK.stage); scene.background = new THREE.Color(lin(b[0]), lin(b[1]), lin(b[2]));
+  hemi.intensity = TOK.dark ? 0.75 : 1.05; keyL.intensity = TOK.dark ? 0.7 : 0.6; uGlow.value = TOK.dark ? 0.22 : 0.06;
+  const wc = hexRgb(TOK.dark ? '#ffffff' : '#141A2B'); sliceSphereWire.material.color.setRGB(lin(wc[0]), lin(wc[1]), lin(wc[2]));
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+
+/* ---------- resize ---------- */
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (w && h) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+  sizeAnalogy();
+}
+new ResizeObserver(() => { resize(); }).observe(stage);
+new ResizeObserver(() => sizeAnalogy()).observe(ac);
+
+/* =====================================================================
+   Main loop
+   ===================================================================== */
+const BUILD_LBL = [
+  ['0D · точка', 'Одна вершина. Ни одного направления.'],
+  ['1D · отрезок', 'Точку сдвинули вдоль X: две вершины, одно ребро.'],
+  ['2D · квадрат', 'Отрезок сдвинули вдоль Y: 4 вершины, 4 ребра.'],
+  ['3D · куб', 'Квадрат сдвинули вдоль Z: 8 вершин, 12 рёбер, 6 граней.'],
+  ['4D · тессеракт', 'Куб сдвинули вдоль W: 16 вершин, 32 ребра, 24 грани, 8 кубов.']
+];
+const BUILD_MOVE = ['Точка тянется вдоль X', 'Отрезок тянется вдоль Y', 'Квадрат тянется вдоль Z', 'Куб тянется вдоль W: одна копия уходит «вглубь» и кажется меньше, другая приближается и растёт'];
+let last = performance.now(), uiTick = 0, lastBuildKey = '', lastSliceKey = '';
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (document.hidden) { last = now; return; }
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const run = !state.paused;
+  // rotation
+  if (run) {
+    const sp = state.speeds[state.mode];
+    let any = false;
+    for (let i = 0; i < 6; i++) if (sp[i]) { rotRows(R_anim, PLANES[i][0], PLANES[i][1], sp[i] * SPEED_K * dt); any = true; }
+    if (any && ((uiTick++ & 63) === 0)) orthonormalize(R_anim, 4);
+  }
+  mul4(R_anim, R_pre, R_tot);
+  if (camT) {
+    camT.t = Math.min(1, camT.t + dt / 0.8); const e = camT.t < 0.5 ? 2 * camT.t * camT.t : 1 - Math.pow(-2 * camT.t + 2, 2) / 2;
+    const dist = camT.from + (camT.to - camT.from) * e; const dir = camera.position.clone().sub(controls.target).normalize();
+    camera.position.copy(controls.target).addScaledVector(dir, dist); if (camT.t >= 1) camT = null;
+  }
+  controls.update();
+  hideAll();
+  const mode = state.mode;
+  if (mode === 'project') {
+    const o = getObj(state.obj);
+    if (o.points) renderPoints(o, R_tot, state.proj === 'persp', false); else renderPolytope(o, R_tot, state.proj === 'persp', false);
+  } else if (mode === 'slice') {
+    const o = getObj(state.obj);
+    if (o.points) renderPoints(o, R_tot, false, true); else { renderPolytope(o, R_tot, false, true); if (!state.slice.ghost) { tubesMain.mesh.count = 0; } }
+    if (o.points && !state.slice.ghost) pointsObj.geo.setDrawRange(0, 0);
+    let a = Infinity, b = -Infinity;
+    if (o.points) { a = -1; b = 1; } else for (let i = 0; i < o.n; i++) { const w = P4[i * 4 + 3]; if (w < a) a = w; if (w > b) b = w; }
+    state.slice.ext = [a, b];
+    if (run && state.slice.sweep) {
+      state.slice.phase += dt * Math.PI * 2 / 13;
+      const mid = (a + b) / 2, amp = (b - a) / 2 + 0.02; state.slice.c = mid + amp * Math.sin(state.slice.phase);
+    }
+    const c = state.slice.c;
+    let info;
+    if (o.points) {
+      const r2 = 1 - c * c;
+      if (r2 > 0) { const r = Math.sqrt(r2) * SCALE; sliceSphere.scale.setScalar(r); sliceSphereWire.scale.setScalar(r * 1.002); sliceSphere.visible = sliceSphereWire.visible = true; const ci = dIdx(c); sliceSphere.material.color.setRGB(LUT_L[ci], LUT_L[ci + 1], LUT_L[ci + 2]); info = { name: 'сфера', r: Math.sqrt(r2) }; }
+      else info = null;
+    } else info = renderSlice(o, c);
+    state.slice.info = info;
+    const key = (info ? info.name + info.V + info.E + info.F + (info.r ? info.r.toFixed(2) : '') : 'none') + fmt(c);
+    if (key !== lastSliceKey) {
+      lastSliceKey = key;
+      const nm = info ? info.name[0].toUpperCase() + info.name.slice(1) : 'Пусто';
+      let counts = 'Наше пространство не задевает фигуру';
+      if (info && info.r !== undefined) counts = `радиус ${fmt(info.r)}`;
+      else if (info && info.F) counts = `${info.V} ${plural(info.V, 'вершина', 'вершины', 'вершин')} · ${info.E} ${plural(info.E, 'ребро', 'ребра', 'рёбер')} · ${info.F} ${plural(info.F, 'грань', 'грани', 'граней')}`;
+      else if (info) counts = 'вырожденное сечение';
+      $('#sliceName').textContent = nm; $('#sliceCounts').textContent = counts; $('#sliceTagName').textContent = nm;
+      $('#sliceTagW').textContent = `w = ${fmt(c)}`; $('#sliceOut').textContent = `w = ${fmt(c)}`;
+      $('#sliceSw').style.background = $('#sliceTagSw').style.background = depthCSS(c);
+      if (document.activeElement !== $('#sliceC')) $('#sliceC').value = c;
+    }
+  } else if (mode === 'build') {
+    const B = state.build;
+    if (run && B.playing) {
+      B.t += dt; const step = 2.1, k = Math.floor(B.t / step), loc = B.t - k * step, p = Math.min(1, loc / 1.5), e = p * p * (3 - 2 * p);
+      B.s = Math.min(4, k + e); if (B.t >= step * 4) { B.s = 4; B.playing = false; }
+    }
+    const r = renderBuild(B.s);
+    const key = r.n + ':' + (r.t > 0.001 ? 1 : 0) + ':' + Math.round(B.s * 200);
+    if (key !== lastBuildKey) {
+      lastBuildKey = key;
+      if (r.t > 0.001 && r.n < 4) { $('#stageBig').textContent = `${r.n}D → ${r.n + 1}D`; $('#stageSmall').textContent = BUILD_MOVE[r.n]; }
+      else { $('#stageBig').textContent = BUILD_LBL[r.n][0]; $('#stageSmall').textContent = BUILD_LBL[r.n][1]; }
+      const row = Math.round(B.s);
+      $$('#ladder tbody tr').forEach(tr => tr.classList.toggle('on', +tr.dataset.n === row));
+      setPressed($('#buildTicks'), 's', (Math.abs(B.s - row) < 0.003) ? row : -1);
+      $('#buildOut').textContent = Math.abs(B.s - row) < 0.003 ? `${row}D` : `${fmt(B.s, 2)}`;
+      if (document.activeElement !== $('#buildS')) $('#buildS').value = B.s;
+    }
+  } else if (mode === 'fold') {
+    const F = state.fold;
+    if (run) {
+      if (F.loop) {
+        F.t = (F.t + dt) % 10.5; const t = F.t;
+        const ease = x => x * x * (3 - 2 * x);
+        F.u = t < 3.5 ? ease(t / 3.5) : t < 5.5 ? 1 : t < 9 ? 1 - ease((t - 5.5) / 3.5) : 0;
+      } else if (F.target !== null) {
+        const dir = Math.sign(F.target - F.u); F.u += dir * dt / 3; if ((dir > 0 && F.u >= F.target) || (dir < 0 && F.u <= F.target) || dir === 0) { F.u = F.target; F.target = null; }
+      }
+    }
+    renderFold(F.u);
+    if (document.activeElement !== $('#foldU')) $('#foldU').value = F.u;
+    $('#foldOut').textContent = `${Math.round(F.u * 100)} %`;
+  }
+  renderer.render(scene, camera);
+  drawGizmo();
+  drawAnalogy();
+}
+
+/* ---------- boot ---------- */
+applyTheme();
+syncAll(); syncPause();
+resize();
+camera.position.copy(CAM_DIR).multiplyScalar(camWant()); camT = null;
+requestAnimationFrame(tick);
+})();
+</script>
+
+</body>
+</html>
