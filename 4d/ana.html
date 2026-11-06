@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Шаг в ана</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: one full-screen first-person view; HUD in the corners (radar bottom-left, 3D map bottom-right), overlays for help and results.
+   One deliberate dark look: dusk in a four-dimensional world. */
+:root{
+  --bg:#0B0F1C; --panel:rgba(12,16,30,.82); --solid:#0F1424; --raise:#161D33; --ink:#E9ECF5; --muted:#949DB4; --faint:#5D667F; --line:rgba(120,135,180,.22);
+  --accent:#E2D9FF; --accent-ink:#160E2E; --orb:#43F0C4;
+  --x:#F0626A; --y:#45BA80; --z:#5490F8; --w:#B98CFF; --ana:#FF8D36; --kata:#3F80F6;
+  --font-display:'Unbounded','Golos Text',system-ui,sans-serif;
+  --font-body:'Golos Text',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--font-body);overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.game{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,#0A0E22 0%,#141A3A 42%,#2A2350 58%,#1B1E38 62%,#141729 100%)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.glass{background:var(--panel);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.cross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none}
+.cross::before,.cross::after{content:"";position:absolute;background:rgba(233,236,245,.75)}
+.cross::before{left:8px;top:0;width:2px;height:18px}.cross::after{top:8px;left:0;height:2px;width:18px}
+
+.hud-tl{position:absolute;top:12px;left:max(12px,env(safe-area-inset-left,0px));max-width:min(420px,calc(100% - 300px));padding:10px 14px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.hud-tl .eyebrow{font:500 11px/1.2 var(--font-mono);color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.hud-tl strong{font:600 15px/1.25 var(--font-display)}
+.hud-tl p{margin:0;font-size:13.5px;line-height:1.45}
+.orbs{display:flex;gap:5px;margin-top:2px}
+.orbs i{width:11px;height:11px;border-radius:50%;border:2px solid var(--orb)}
+.orbs i.got{background:var(--orb)}
+.hud-tr{position:absolute;top:12px;right:max(12px,env(safe-area-inset-right,0px));display:flex;gap:6px;z-index:3}
+.tb{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:8px 12px;font-size:13px;font-weight:500;cursor:pointer;display:flex;gap:7px;align-items:center}
+.tb:hover{border-color:var(--faint)}
+.tb kbd{font:500 10.5px/1 var(--font-mono);color:var(--faint);border:1px solid var(--line);border-radius:5px;padding:2px 5px}
+
+.scan{position:absolute;left:max(12px,env(safe-area-inset-left,0px));bottom:12px;width:280px;padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.scan h4,.map h4{margin:0;font:600 10.5px/1.2 var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+#scan{width:100%;height:132px;display:block}
+.tgt{font-size:12.5px;line-height:1.45;color:var(--muted)}
+.tgt b{color:var(--ink);font-family:var(--font-mono);font-weight:600}
+.tgt b.ana{color:var(--ana)}.tgt b.kata{color:var(--kata)}
+.facing{display:flex;flex-direction:column;gap:4px}
+.fbar{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--raise)}
+.fbar span{display:block;height:100%}
+.fl{font:500 11.5px/1.2 var(--font-mono);color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.map{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:12px;width:290px;height:258px;padding:10px 12px;pointer-events:none;display:flex;flex-direction:column;gap:4px;background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-radius:4px!important}
+.map p{margin:auto 0 0;font-size:11.5px;color:var(--muted);line-height:1.35}
+.map.small{width:200px;height:182px}
+.mlab{position:absolute;font:600 11px/1 var(--font-mono);transform:translate(-50%,-50%);pointer-events:none}
+.toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);padding:9px 16px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:14px;pointer-events:none;max-width:calc(100% - 32px);text-align:center;z-index:4}
+.toast.good{border-color:var(--orb);color:var(--orb)}
+.toast.warn{border-color:rgba(255,141,54,.6)}
+.lockhint{position:absolute;left:50%;top:58%;transform:translateX(-50%);font-size:13px;color:var(--muted);pointer-events:none;background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+
+.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:18px;background:rgba(6,8,16,.66);z-index:8}
+.card{background:var(--solid);border:1px solid var(--line);border-radius:18px;padding:24px;width:min(640px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.card h1{font:600 26px/1.15 var(--font-display);margin:0;letter-spacing:-.01em}
+.card h2{font:600 20px/1.2 var(--font-display);margin:0}
+.card p{margin:0;font-size:15px;line-height:1.6;max-width:62ch}
+.card .eyebrow{font:500 11.5px/1.2 var(--font-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin:0}
+.keys{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0;font-size:14px}
+.keys dt{font:500 13px/1.45 var(--font-mono);white-space:nowrap;color:var(--ink)}
+.keys dd{margin:0;color:var(--muted)}
+.keys dt.ana{color:var(--ana)}.keys dt.w{color:var(--w)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.box{background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.box b{color:var(--ink);font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{appearance:none;border:1px solid var(--line);background:var(--raise);border-radius:11px;padding:10px 16px;font-size:14.5px;font-weight:500;cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:600}
+.lv{display:flex;flex-direction:column;gap:6px}
+.lv button{appearance:none;text-align:left;border:1px solid var(--line);background:var(--raise);border-radius:12px;padding:11px 14px;cursor:pointer;display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+.lv button:hover{border-color:var(--faint)}
+.lv button[aria-current="true"]{border-color:var(--accent)}
+.lv .n{grid-row:span 2;font:600 13px/1 var(--font-mono);color:var(--accent)}
+.lv b{font-weight:600;font-size:14.5px}
+.lv small{color:var(--muted);font-size:12.5px}
+.lv .t{grid-row:span 2;font:500 12px/1 var(--font-mono);color:var(--orb)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--raise);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.stats span{font-size:12px;color:var(--muted)}
+.stats b{font:600 18px/1.2 var(--font-mono)}
+
+/* touch controls */
+.touch{position:absolute;inset:auto 0 0 0;height:0;z-index:5}
+.joy{position:absolute;left:max(18px,env(safe-area-inset-left,0px));bottom:200px;width:124px;height:124px;border-radius:50%;border:1px solid var(--line);background:rgba(12,16,30,.45);touch-action:none}
+.knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(226,217,255,.25);border:1px solid rgba(226,217,255,.5)}
+.tbtns{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:200px;display:grid;grid-template-columns:repeat(2,64px);gap:8px}
+.tbtns button{appearance:none;height:54px;border-radius:14px;border:1px solid var(--line);background:rgba(12,16,30,.6);font-size:13px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none}
+.tbtns .ana{color:var(--ana);border-color:rgba(255,141,54,.5)}.tbtns .kata{color:var(--kata);border-color:rgba(63,128,246,.5)}
+.tbtns .w{color:var(--w);border-color:rgba(185,140,255,.5)}
+.tbtns button.on{background:rgba(226,217,255,.18)}
+.fail{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
+
+@media (max-width: 760px){
+  .scan{width:188px;padding:8px 10px}
+  #scan{height:96px}
+  .facing{display:none}
+  .map,.map.small{width:160px;height:150px}
+  .map p{display:none}
+  .hud-tl{max-width:calc(100% - 24px);top:58px}
+  .cols{grid-template-columns:1fr}
+  .card{padding:18px}
+  .card h1{font-size:22px}
+  .stats{grid-template-columns:1fr 1fr}
+  .tb kbd{display:none}
+}
+@media (max-height: 560px){ .map{height:190px} #scan{height:90px} .joy,.tbtns{bottom:150px} }
+</style>
+
+<div class="game" id="game">
+  <canvas id="gl" aria-label="Вид от первого лица в четырёхмерном мире"></canvas>
+  <div class="cross" aria-hidden="true"></div>
+  <div class="hud-tl glass" id="hudTL">
+    <span class="eyebrow" id="hudLvl">Уровень 1</span>
+    <strong id="hudName">—</strong>
+    <p id="hudObj"></p>
+    <div class="orbs" id="hudOrbs"></div>
+  </div>
+  <div class="hud-tr">
+    <button class="tb" id="bAlign" title="Выровнять взгляд по осям мира">Выровнять <kbd>X</kbd></button>
+    <button class="tb" id="bMap" title="Крупнее или мельче карта">Карта <kbd>M</kbd></button>
+    <button class="tb" id="bHelp" title="Справка и управление">Справка <kbd>H</kbd></button>
+    <button class="tb" id="bLevels">Уровни</button>
+  </div>
+  <div class="scan glass" id="scanBox">
+    <h4><span>Радар 4D</span><span class="mono" id="scanRange">до 25 м</span></h4>
+    <canvas id="scan" aria-label="Радар: плоскость — ваш срез, ножки — расстояние по ана и ката"></canvas>
+    <div class="tgt" id="tgt"></div>
+    <div class="facing"><div class="fbar" id="fbar"></div><div class="fl"><span id="fText">взгляд</span><span id="pText"></span></div></div>
+  </div>
+  <div class="map glass" id="mapBox">
+    <h4><span>Карта пола X · Z · W</span></h4>
+    <p>Вверх на карте — ось W. Светлая пластина — то, что вы сейчас видите.</p>
+  </div>
+  <div id="mapLabels"></div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="lockhint" id="lockHint" hidden>Щёлкните по экрану, чтобы управлять мышью</div>
+  <div class="touch" id="touch" hidden>
+    <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+    <div class="tbtns">
+      <button class="ana" data-hold="ana">Ана</button><button class="w" data-hold="turnA">↻ в ана</button>
+      <button class="kata" data-hold="kata">Ката</button><button class="w" data-hold="turnK">↺ в ката</button>
+      <button data-tap="jump">Прыжок</button><button data-tap="align">Выровнять</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="help">
+    <div class="card" role="dialog" aria-labelledby="helpTitle">
+      <p class="eyebrow">Игра от первого лица в четырёх измерениях</p>
+      <h1 id="helpTitle">Шаг в ана</h1>
+      <p>Вы попали в четырёхмерный мир. Пол здесь трёхмерный: по нему можно идти вперёд, вбок и ещё в одну сторону — <b style="color:var(--ana)">ана</b>, перпендикулярную всему, что вы видите. Обратная сторона называется <b style="color:var(--kata)">ката</b>.</p>
+      <p>Глаза видят только трёхмерный срез мира, проходящий через вас. Стены и колонны, которые стоят в стороне ана или ката, невидимы, пока вы туда не шагнёте или не повернётесь. Соберите все светящиеся сферы и войдите в портал.</p>
+      <div class="cols">
+        <dl class="keys" id="keysDesk">
+          <dt>мышь</dt><dd>осмотреться (щелчок захватывает мышь, Esc отпускает)</dd>
+          <dt>W A S D</dt><dd>идти вперёд, назад, вбок</dd>
+          <dt class="ana">E / Q</dt><dd>шаг в ана / ката</dd>
+          <dt class="w">C / Z</dt><dd>повернуться в 4D: взгляд уходит в ана / ката (или правая кнопка мыши + движение)</dd>
+          <dt class="w">R / F</dt><dd>наклонить срез: правая рука уходит в ана / ката</dd>
+          <dt>Пробел · Shift</dt><dd>прыжок · бег</dd>
+          <dt>X · M · H</dt><dd>выровнять взгляд · карта · справка</dd>
+        </dl>
+        <div class="box">
+          <span><b>Радар</b> внизу слева: эллипс — ваш срез, точки на нём — то, что впереди и сбоку. Ножка вверх — цель на столько метров в сторону ана, вниз — в сторону ката.</span>
+          <span><b>Карта</b> внизу справа: весь трёхмерный пол мира, оси X, Z и W. Светлая пластина — ваш срез.</span>
+          <span><b>Контуры</b> оранжевого и синего цвета — стены в метре от вас по ана и по ката: боковое зрение в 4D.</span>
+        </div>
+      </div>
+      <p class="note" id="touchNote" hidden style="font-size:13.5px;color:var(--muted)">На телефоне: левый джойстик — идти, тяните по правой половине экрана — осмотреться, кнопки справа — шаг и поворот в 4D.</p>
+      <div class="row"><button class="btn primary" id="bPlay">Играть</button><button class="btn" id="bHelpLevels">Выбрать уровень</button></div>
+    </div>
+  </div>
+  <div class="overlay" id="done" hidden>
+    <div class="card" role="dialog" aria-labelledby="doneTitle">
+      <p class="eyebrow">Уровень пройден</p>
+      <h2 id="doneTitle">—</h2>
+      <div class="stats"><div><span>Время</span><b id="sTime">0:00</b></div><div><span>Пройдено</span><b id="sDist">0 м</b></div><div><span>Из них по ана и ката</span><b id="sAna">0 м</b></div><div><span>Поворотов в 4D</span><b id="sTurn">0°</b></div><div><span>Прыжков</span><b id="sJump">0</b></div><div><span>Сферы</span><b id="sOrbs">0</b></div></div>
+      <p id="doneNote"></p>
+      <div class="row"><button class="btn primary" id="bNext">Следующий уровень</button><button class="btn" id="bAgain">Ещё раз</button></div>
+    </div>
+  </div>
+  <div class="overlay" id="levels" hidden>
+    <div class="card" role="dialog" aria-labelledby="lvTitle">
+      <div class="row" style="justify-content:space-between"><h2 id="lvTitle">Уровни</h2><button class="btn" id="bLvClose">Закрыть</button></div>
+      <div class="lv" id="lvList"></div>
+    </div>
+  </div>
+  <div class="fail" id="fail" hidden><p>Не удалось запустить WebGL. Игре нужен браузер с поддержкой 3D-графики.</p></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+if (!window.THREE) { $('#fail').hidden = false; return; }
+
+/* ============================================================
+   World model. Coordinates are 4D: x, y (up, gravity), z, w.
+   The ground is three-dimensional: x, z and w.
+   The player keeps "up" = y and turns freely in the three
+   horizontal planes; the frame H holds forward F, right R and ana A
+   as rows, each written in horizontal components (x, z, w).
+   ============================================================ */
+const HAX = [0, 2, 3];                 // horizontal index -> 4D axis
+const AXN = ['X', 'Y', 'Z', 'W'];
+const AXC = ['#F0626A', '#45BA80', '#5490F8', '#B98CFF'];
+const COL = { floor: '#4B5375', wall: '#8C88BA', pillar: '#AFC0E4', plat: '#6F98A6', edge: '#5C6190', ana: '#FF8D36', kata: '#3F80F6', orb: '#43F0C4', exit: '#E2D9FF' };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = matchMedia('(pointer: coarse)').matches;
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmt = (x, d = 1) => (x < -0.5 * Math.pow(10, -d) ? '−' : '') + Math.abs(x).toFixed(d).replace('.', ',');
+function plural(n, a, b, c) { const n10 = n % 10, n100 = n % 100; if (n10 === 1 && n100 !== 11) return a; if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return b; return c; }
+function box(x0, x1, y0, y1, z0, z1, w0, w1, kind) { return { lo: [x0, y0, z0, w0], hi: [x1, y1, z1, w1], kind }; }
+function arena(ex, ez, ew, wallH) {
+  const B = [box(-ex, ex, -1, 0, -ez, ez, -ew, ew, 'floor')], t = 0.4, h = wallH;
+  B.push(box(-ex - t, -ex, 0, h, -ez, ez, -ew, ew, 'edge'), box(ex, ex + t, 0, h, -ez, ez, -ew, ew, 'edge'));
+  B.push(box(-ex, ex, 0, h, -ez - t, -ez, -ew, ew, 'edge'), box(-ex, ex, 0, h, ez, ez + t, -ew, ew, 'edge'));
+  B.push(box(-ex, ex, 0, h, -ez, ez, -ew - t, -ew, 'edge'), box(-ex, ex, 0, h, -ez, ez, ew, ew + t, 'edge'));
+  return B;
+}
+
+/* ---------- levels ---------- */
+function levelIntro() {
+  const B = arena(12, 12, 12, 1.4);
+  // a 3×3×3 lattice of slim pillars: every slice cuts it differently
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) {
+    const x = -9 + i * 2.6, z = -9 + j * 2.6, w = -2.6 + k * 2.6;
+    B.push(box(x - 0.35, x + 0.35, 0, 2.6, z - 0.35, z + 0.35, w - 0.35, w + 0.35, 'pillar'));
+  }
+  B.push(box(4, 6, 0, 2.2, 3, 3.6, -0.6, 0.6, 'wall'), box(-3, 3, 0, 0.6, -5.5, -4.9, -12, 12, 'plat'), box(7, 9, 0, 3, -3, -1, 1.5, 3.5, 'wall'));
+  return { id: 'intro', name: 'Первые шаги в 4D', boxes: B, start: [0, 0, 8, 0], face: 'z-', orbs: [[0, 1.2, 2, 0], [-4, 1.2, -2, 5], [6, 1.2, -7, -7]], exit: [0, 1.4, -9.5, 0], wlo: -12, whi: 12, tutorial: true,
+    text: 'Соберите три сферы и войдите в портал.' };
+}
+function levelWall() {
+  const B = arena(14, 14, 7, 1.4);
+  B.push(box(-14, 14, 0, 3.6, 3, 3.6, -1.3, 1.3, 'wall'));                   // a wall across the whole slice
+  const rx0 = -11, rx1 = -4, rz0 = -11, rz1 = -4, rw0 = 1.6, rw1 = 4.6, t = 0.4, h = 3.2;   // a closed room, but only for w in [1.6, 4.6]
+  B.push(box(rx0, rx1, 0, h, rz0, rz0 + t, rw0, rw1, 'wall'), box(rx0, rx1, 0, h, rz1 - t, rz1, rw0, rw1, 'wall'), box(rx0, rx0 + t, 0, h, rz0, rz1, rw0, rw1, 'wall'), box(rx1 - t, rx1, 0, h, rz0, rz1, rw0, rw1, 'wall'));
+  B.push(box(5, 7, 0, 0.45, -8.5, -6.5, -5.5, -2.5, 'plat'), box(7, 10.5, 0, 0.9, -10.5, -6, -5.5, -2.5, 'plat'));       // steps to a platform
+  B.push(box(-2, 2, 0, 3, -12, -11.2, -7, 7, 'wall'), box(10, 10.6, 0, 3, -3, 6, -7, 0, 'wall'));
+  return { id: 'wall', name: 'Стена без конца', boxes: B, start: [0, 0, 10, 0], face: 'z-', orbs: [[0, 1.2, -1, 0], [-7.5, 1.2, -7.5, 3.1], [9, 2.1, -8.5, -4]], exit: [11, 1.4, 10, 5], wlo: -7, whi: 7,
+    text: 'Стена перегородила весь ваш мир. Но в 4D у неё есть край. Соберите три сферы: одна заперта в комнате без дверей, другая на помосте.' };
+}
+function levelMaze(seed, n, name, id) {
+  const S = 3.2, T = 0.3, H = 3, rnd = mulberry32(seed), N = n * n * n, ex = n * S;
+  const B = [box(0, ex, -1, 0, 0, ex, 0, ex, 'floor')];
+  const t = 0.4; B.push(box(-t, 0, 0, H, 0, ex, 0, ex, 'edge'), box(ex, ex + t, 0, H, 0, ex, 0, ex, 'edge'), box(0, ex, 0, H, -t, 0, 0, ex, 'edge'), box(0, ex, 0, H, ex, ex + t, 0, ex, 'edge'), box(0, ex, 0, H, 0, ex, -t, 0, 'edge'), box(0, ex, 0, H, 0, ex, ex, ex + t, 'edge'));
+  const id3 = (i, j, k) => (k * n + j) * n + i, open = new Set(), seen = new Uint8Array(N), stack = [0]; seen[0] = 1;
+  while (stack.length) {
+    const c = stack[stack.length - 1], i = c % n, j = Math.floor(c / n) % n, k = Math.floor(c / n / n), opts = [];
+    [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].forEach(d => { const a = i + d[0], b = j + d[1], e = k + d[2]; if (a < 0 || b < 0 || e < 0 || a >= n || b >= n || e >= n) return; const q = id3(a, b, e); if (!seen[q]) opts.push(q); });
+    if (!opts.length) { stack.pop(); continue; }
+    const q = opts[Math.floor(rnd() * opts.length)]; seen[q] = 1; open.add(Math.min(c, q) + ':' + Math.max(c, q)); stack.push(q);
+  }
+  // a few extra openings make loops
+  const passes = (a, b) => open.has(Math.min(a, b) + ':' + Math.max(a, b));
+  for (let c = 0; c < N; c++) { const i = c % n; if (i + 1 < n && rnd() < 0.08) open.add(c + ':' + (c + 1)); }
+  for (let ax = 0; ax < 3; ax++) for (let p = 1; p < n; p++) for (let u = 0; u < n; u++) for (let v = 0; v < n; v++) {
+    const cc = [0, 0, 0]; cc[ax] = p; const o = [0, 1, 2].filter(x => x !== ax); cc[o[0]] = u; cc[o[1]] = v;
+    const a = id3(...cc), bb = cc.slice(); bb[ax] = p - 1; const b = id3(...bb);
+    if (passes(a, b)) continue;
+    const lo = [0, 0, 0], hi = [0, 0, 0]; lo[ax] = p * S - T / 2; hi[ax] = p * S + T / 2; lo[o[0]] = u * S - T / 2; hi[o[0]] = (u + 1) * S + T / 2; lo[o[1]] = v * S - T / 2; hi[o[1]] = (v + 1) * S + T / 2;
+    B.push(box(lo[0], hi[0], 0, H, lo[1], hi[1], lo[2], hi[2], 'wall'));
+  }
+  // distances over the cell graph for placing orbs and the exit
+  const dist = (src) => { const d = new Int32Array(N).fill(-1), q = [src]; d[src] = 0; for (let h = 0; h < q.length; h++) { const c = q[h], i = c % n, j = Math.floor(c / n) % n, k = Math.floor(c / n / n); [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].forEach(dd => { const a = i + dd[0], b = j + dd[1], e = k + dd[2]; if (a < 0 || b < 0 || e < 0 || a >= n || b >= n || e >= n) return; const g = id3(a, b, e); if (d[g] < 0 && passes(c, g)) { d[g] = d[c] + 1; q.push(g); } }); } return d; };
+  const picked = [0], K = n >= 5 ? 4 : 3;
+  for (let m = 0; m <= K; m++) { const ds = picked.map(dist); let best = -1, bi = 0; for (let c = 0; c < N; c++) { if (picked.includes(c)) continue; const v = Math.min(...ds.map(d => d[c])) + rnd() * 0.5; if (v > best) { best = v; bi = c; } } picked.push(bi); }
+  const ctr = c => { const i = c % n, j = Math.floor(c / n) % n, k = Math.floor(c / n / n); return [(i + 0.5) * S, 1.2, (j + 0.5) * S, (k + 0.5) * S]; };
+  const exitC = picked[1], orbs = picked.slice(2).map(ctr), exit = ctr(exitC); exit[1] = 1.4;
+  return { id, name, boxes: B, start: [S / 2, 0, S / 2, S / 2], face: 'x+', orbs, exit, wlo: 0, whi: ex,
+    text: `Лабиринт на трёхмерном полу ${n}×${n}×${n} комнат: коридоры идут по X, Z и W. Соберите ${K} ${plural(K, 'сферу', 'сферы', 'сфер')} и найдите портал. Смотрите на карту: на ней видно весь лабиринт.` };
+}
+const LEVELS = [
+  { make: levelIntro, name: 'Первые шаги в 4D', sub: 'шаги и повороты в ана' },
+  { make: levelWall, name: 'Стена без конца', sub: 'обойти стену через четвёртое измерение' },
+  { make: () => levelMaze(11, 4, 'Гиперлабиринт', 'maze'), name: 'Гиперлабиринт', sub: 'лабиринт 4×4×4 на трёхмерном полу' },
+  { make: () => levelMaze((Math.random() * 1e9) | 0, 5, 'Случайный лабиринт', 'free'), name: 'Случайный лабиринт', sub: '5×5×5 комнат, каждый раз новый' }
+];
+
+/* ---------- game state ---------- */
+const P = new Float64Array(4);            // feet position
+const H = new Float64Array(9);            // rows F, R, A in (x, z, w)
+let pitch = 0, vy = 0, grounded = false, L = null, LI = 0;
+const ST = { orbs: 0, got: [], time: 0, dist: 0, distAna: 0, turn4: 0, jumps: 0, done: false, tutStep: 0, exitOpen: false };
+const EYE = 1.55, RAD = 0.3, BODY = 1.7;
+function setFace(face) {
+  H.fill(0);
+  if (face === 'x+') { H[0] = 1; H[4] = 1; H[8] = 1; }          // F = +X, R = +Z, A = +W
+  else { H[1] = -1; H[3] = 1; H[8] = 1; }                         // F = −Z, R = +X, A = +W
+}
+function rotH(i, j, ang) { const c = Math.cos(ang), s = Math.sin(ang); for (let k = 0; k < 3; k++) { const a = H[i * 3 + k], b = H[j * 3 + k]; H[i * 3 + k] = c * a + s * b; H[j * 3 + k] = -s * a + c * b; } }
+function orthoH() { for (let i = 0; i < 3; i++) { for (let j = 0; j < i; j++) { let d = 0; for (let k = 0; k < 3; k++) d += H[i * 3 + k] * H[j * 3 + k]; for (let k = 0; k < 3; k++) H[i * 3 + k] -= d * H[j * 3 + k]; } let l = 0; for (let k = 0; k < 3; k++) l += H[i * 3 + k] ** 2; l = Math.sqrt(l) || 1; for (let k = 0; k < 3; k++) H[i * 3 + k] /= l; } }
+let alignT = null;
+function startAlign() {
+  // nearest frame whose rows are world axes, keeping orientation (det +1)
+  const used = [], T = new Float64Array(9);
+  for (let r = 0; r < 2; r++) { let bk = 0, bv = -1; for (let k = 0; k < 3; k++) if (!used.includes(k) && Math.abs(H[r * 3 + k]) > bv) { bv = Math.abs(H[r * 3 + k]); bk = k; } used.push(bk); T[r * 3 + bk] = Math.sign(H[r * 3 + bk]) || 1; }
+  const k3 = [0, 1, 2].find(k => !used.includes(k)); T[6 + k3] = 1;
+  const det = T[0] * (T[4] * T[8] - T[5] * T[7]) - T[1] * (T[3] * T[8] - T[5] * T[6]) + T[2] * (T[3] * T[7] - T[4] * T[6]);
+  if (det < 0) T[6 + k3] = -1;
+  alignT = { from: Float64Array.from(H), to: T, t: 0 };
+}
+
+/* ============================================================
+   Rendering: the 3D slice through the player.
+   Every box is axis-aligned and "up" is always y, so its slice is a
+   vertical prism over a convex polygon (the cut of an x-z-w cuboid).
+   ============================================================ */
+const canvas = $('#gl'), game = $('#game');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch (e) { $('#fail').hidden = false; return; }
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.autoClear = false;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 220); camera.rotation.order = 'YXZ';
+const FOG = new THREE.Color('#1B1E38');
+const uni = { uLight: { value: new THREE.Vector3(0, 1, 0) }, uFog: { value: FOG }, uFogNear: { value: 12 }, uFogFar: { value: 52 }, uWlo: { value: -10 }, uWhi: { value: 10 }, uTA: { value: new THREE.Color('#3FC8B4') }, uTB: { value: new THREE.Color('#D07CF0') } };
+const boxMat = new THREE.ShaderMaterial({
+  uniforms: uni, side: THREE.DoubleSide, extensions: { derivatives: true },
+  vertexShader: `attribute vec4 a4; attribute float aAxis; attribute vec3 aCol;
+    varying vec4 v4; varying float vAxis; varying vec3 vCol; varying vec3 vN; varying float vDist;
+    void main(){ v4=a4; vAxis=aAxis; vCol=aCol; vN=normal; vec4 mv=modelViewMatrix*vec4(position,1.0); vDist=length(mv.xyz); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader: `uniform vec3 uLight; uniform vec3 uFog; uniform float uFogNear; uniform float uFogFar; uniform float uWlo; uniform float uWhi; uniform vec3 uTA; uniform vec3 uTB;
+    varying vec4 v4; varying float vAxis; varying vec3 vCol; varying vec3 vN; varying float vDist;
+    float gl1(float c){ float d=abs(fract(c+0.5)-0.5); float fw=max(fwidth(c),1e-4); return 1.0-smoothstep(fw*0.7,fw*1.7,d); }
+    void main(){
+      vec3 n=normalize(vN);
+      float lam=0.45+0.55*max(dot(n,uLight),0.0);
+      float tw=clamp((v4.w-uWlo)/(uWhi-uWlo),0.0,1.0);
+      vec3 base=mix(vCol, vCol*mix(uTA,uTB,tw)*1.55, 0.42);
+      float g=0.0;
+      if(abs(vAxis-0.0)>0.5) g=max(g,gl1(v4.x));
+      if(abs(vAxis-1.0)>0.5) g=max(g,gl1(v4.y));
+      if(abs(vAxis-2.0)>0.5) g=max(g,gl1(v4.z));
+      if(abs(vAxis-3.0)>0.5) g=max(g,gl1(v4.w));
+      float chk=0.0; if(abs(vAxis-1.0)<0.5) chk=mod(floor(v4.x)+floor(v4.z)+floor(v4.w),2.0);
+      vec3 col=base*lam*(1.0-0.07*chk);
+      col=mix(col,col*0.5,g*0.6);
+      col=mix(col,uFog,smoothstep(uFogNear,uFogFar,vDist));
+      gl_FragColor=vec4(col,1.0);
+    }`
+});
+const MAXT = 14000;
+const geo = new THREE.BufferGeometry();
+const aPos = new THREE.BufferAttribute(new Float32Array(MAXT * 9), 3), aNor = new THREE.BufferAttribute(new Float32Array(MAXT * 9), 3);
+const a4 = new THREE.BufferAttribute(new Float32Array(MAXT * 12), 4), aAx = new THREE.BufferAttribute(new Float32Array(MAXT * 3), 1), aCol = new THREE.BufferAttribute(new Float32Array(MAXT * 9), 3);
+[aPos, aNor, a4, aAx, aCol].forEach(a => a.setUsage(THREE.DynamicDrawUsage));
+geo.setAttribute('position', aPos); geo.setAttribute('normal', aNor); geo.setAttribute('a4', a4); geo.setAttribute('aAxis', aAx); geo.setAttribute('aCol', aCol); geo.setDrawRange(0, 0);
+const sliceMesh = new THREE.Mesh(geo, boxMat); sliceMesh.frustumCulled = false; scene.add(sliceMesh);
+const MAXL = 12000;
+const lgeo = new THREE.BufferGeometry(), lPos = new THREE.BufferAttribute(new Float32Array(MAXL * 6), 3), lCol = new THREE.BufferAttribute(new Float32Array(MAXL * 6), 3);
+lPos.setUsage(THREE.DynamicDrawUsage); lCol.setUsage(THREE.DynamicDrawUsage); lgeo.setAttribute('position', lPos); lgeo.setAttribute('color', lCol); lgeo.setDrawRange(0, 0);
+const ghostLines = new THREE.LineSegments(lgeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.75, depthWrite: false })); ghostLines.frustumCulled = false; scene.add(ghostLines);
+scene.add(new THREE.HemisphereLight(0xd8deff, 0x20233a, 0.8));
+const dirL = new THREE.DirectionalLight(0xffffff, 0.6); scene.add(dirL); scene.add(dirL.target);
+const orbMat = new THREE.MeshStandardMaterial({ color: COL.orb, emissive: COL.orb, emissiveIntensity: 0.75, roughness: 0.3 });
+const orbMeshes = [], orbGhosts = [];
+for (let i = 0; i < 6; i++) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), orbMat); m.visible = false; scene.add(m); orbMeshes.push(m);
+  const g = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), new THREE.MeshBasicMaterial({ color: COL.ana, wireframe: true, transparent: true, opacity: 0.8 })); g.visible = false; scene.add(g); orbGhosts.push(g);
+}
+const exitMat = new THREE.MeshStandardMaterial({ color: COL.exit, emissive: COL.exit, emissiveIntensity: 0.5, transparent: true, opacity: 0.55, roughness: 0.2, depthWrite: false });
+const exitMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), exitMat); exitMesh.renderOrder = 5; scene.add(exitMesh);
+const exitRing = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 10, 64), new THREE.MeshBasicMaterial({ color: COL.exit })); scene.add(exitRing);
+const exitGhost = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshBasicMaterial({ color: COL.ana, wireframe: true, transparent: true, opacity: 0.7 })); scene.add(exitGhost);
+
+/* cuboid edges in horizontal index space (0 = x, 1 = z, 2 = w) */
+const CE = [];
+for (let c = 0; c < 8; c++) for (let b = 0; b < 3; b++) if (!((c >> b) & 1)) { const fx = []; for (let k = 0; k < 3; k++) if (k !== b) fx.push([k, (c >> k) & 1]); CE.push({ a: c, b: c | (1 << b), fx }); }
+const sC = new Float64Array(8), cH = new Float64Array(24);
+const PX = new Float64Array(12), PZ = new Float64Array(12), PW = new Float64Array(12), PFv = new Float64Array(12), PRv = new Float64Array(12), PE = new Int32Array(12), ANG = new Float64Array(12), ORD = new Int32Array(12);
+let F = [0, 0, 0], R = [0, 0, 0], A = [0, 0, 0];
+function readFrame() { F = [H[0], H[1], H[2]]; R = [H[3], H[4], H[5]]; A = [H[6], H[7], H[8]]; }
+/* signed distance range of a box to the hyperplane through P with normal A, shifted by off */
+function sRange(b) {
+  let lo = 0, hi = 0;
+  for (let k = 0; k < 3; k++) { const ax = HAX[k], a = A[k] * (b.lo[ax] - P[ax]), c = A[k] * (b.hi[ax] - P[ax]); lo += Math.min(a, c); hi += Math.max(a, c); }
+  return [lo, hi];
+}
+/* polygon of the cut; returns vertex count, writes sorted order into ORD */
+function cutBox(b, off) {
+  for (let c = 0; c < 8; c++) {
+    for (let k = 0; k < 3; k++) { const ax = HAX[k]; cH[c * 3 + k] = ((c >> k) & 1) ? b.hi[ax] : b.lo[ax]; }
+    sC[c] = (cH[c * 3] - P[0]) * A[0] + (cH[c * 3 + 1] - P[2]) * A[1] + (cH[c * 3 + 2] - P[3]) * A[2] - off;
+  }
+  let n = 0;
+  for (let e = 0; e < 12; e++) {
+    const E = CE[e], sa = sC[E.a], sb = sC[E.b];
+    if ((sa > 0) === (sb > 0)) continue;
+    const t = sa / (sa - sb), x = cH[E.a * 3] + t * (cH[E.b * 3] - cH[E.a * 3]), z = cH[E.a * 3 + 1] + t * (cH[E.b * 3 + 1] - cH[E.a * 3 + 1]), w = cH[E.a * 3 + 2] + t * (cH[E.b * 3 + 2] - cH[E.a * 3 + 2]);
+    const dx = x - P[0], dz = z - P[2], dw = w - P[3];
+    PX[n] = x; PZ[n] = z; PW[n] = w; PFv[n] = dx * F[0] + dz * F[1] + dw * F[2]; PRv[n] = dx * R[0] + dz * R[1] + dw * R[2]; PE[n] = e; n++;
+  }
+  if (n < 3) return 0;
+  let cf = 0, cr = 0; for (let i = 0; i < n; i++) { cf += PFv[i]; cr += PRv[i]; } cf /= n; cr /= n;
+  for (let i = 0; i < n; i++) { ANG[i] = Math.atan2(PRv[i] - cr, PFv[i] - cf); ORD[i] = i; }
+  for (let i = 1; i < n; i++) { const v = ORD[i]; let j = i - 1; while (j >= 0 && ANG[ORD[j]] > ANG[v]) { ORD[j + 1] = ORD[j]; j--; } ORD[j + 1] = v; }
+  return n;
+}
+function commonFace(e1, e2) { const a = CE[e1].fx, b = CE[e2].fx; for (const p of a) for (const q of b) if (p[0] === q[0] && p[1] === q[1]) return p; return null; }
+const KIND_COL = {}; Object.keys(COL).forEach(k => { KIND_COL[k] = new THREE.Color(COL[k]); });
+let nTri = 0, nLine = 0;
+const AP = aPos.array, AN = aNor.array, A4 = a4.array, AA = aAx.array, AC = aCol.array, LP = lPos.array, LC = lCol.array;
+function vtx(t, j, f, r, y, x4, z4, w4, nx, ny, nz, ax, col) {
+  const o = (t * 3 + j) * 3, o4 = (t * 3 + j) * 4;
+  AP[o] = r; AP[o + 1] = y - eyeY; AP[o + 2] = -f; AN[o] = nx; AN[o + 1] = ny; AN[o + 2] = nz;
+  A4[o4] = x4; A4[o4 + 1] = y; A4[o4 + 2] = z4; A4[o4 + 3] = w4; AA[t * 3 + j] = ax; AC[o] = col.r; AC[o + 1] = col.g; AC[o + 2] = col.b;
+}
+function emitPrism(b, n) {
+  const col = KIND_COL[b.kind] || KIND_COL.wall, y0 = b.lo[1], y1 = b.hi[1];
+  for (const [yy, ny] of [[y1, 1], [y0, -1]]) {
+    if (ny < 0 && y0 <= -0.99) continue;                     // floor undersides are never seen
+    for (let i = 1; i < n - 1 && nTri < MAXT; i++) {
+      const q = [ORD[0], ORD[i], ORD[i + 1]];
+      q.forEach((v, j) => vtx(nTri, j, PFv[v], PRv[v], yy, PX[v], PZ[v], PW[v], 0, ny, 0, 1, col)); nTri++;
+    }
+  }
+  for (let i = 0; i < n && nTri < MAXT - 2; i++) {
+    const u = ORD[i], v = ORD[(i + 1) % n], cf = commonFace(PE[u], PE[v]); if (!cf) continue;
+    const k = cf[0], sg = cf[1] ? 1 : -1; let nf = F[k] * sg, nr = R[k] * sg; const l = Math.hypot(nf, nr) || 1; nf /= l; nr /= l;
+    const ax = HAX[k];
+    vtx(nTri, 0, PFv[u], PRv[u], y0, PX[u], PZ[u], PW[u], nr, 0, -nf, ax, col); vtx(nTri, 1, PFv[v], PRv[v], y0, PX[v], PZ[v], PW[v], nr, 0, -nf, ax, col); vtx(nTri, 2, PFv[v], PRv[v], y1, PX[v], PZ[v], PW[v], nr, 0, -nf, ax, col); nTri++;
+    vtx(nTri, 0, PFv[u], PRv[u], y0, PX[u], PZ[u], PW[u], nr, 0, -nf, ax, col); vtx(nTri, 1, PFv[v], PRv[v], y1, PX[v], PZ[v], PW[v], nr, 0, -nf, ax, col); vtx(nTri, 2, PFv[u], PRv[u], y1, PX[u], PZ[u], PW[u], nr, 0, -nf, ax, col); nTri++;
+  }
+}
+const C_ANA = new THREE.Color(COL.ana), C_KATA = new THREE.Color(COL.kata);
+function line(f1, r1, y1, f2, r2, y2, c) {
+  if (nLine >= MAXL) return; const o = nLine * 6;
+  LP[o] = r1; LP[o + 1] = y1 - eyeY; LP[o + 2] = -f1; LP[o + 3] = r2; LP[o + 4] = y2 - eyeY; LP[o + 5] = -f2;
+  LC[o] = LC[o + 3] = c.r; LC[o + 1] = LC[o + 4] = c.g; LC[o + 2] = LC[o + 5] = c.b; nLine++;
+}
+function emitGhost(b, n, c) {
+  const y0 = Math.max(0.02, b.lo[1]), y1 = b.hi[1];
+  for (let i = 0; i < n; i++) { const u = ORD[i], v = ORD[(i + 1) % n]; line(PFv[u], PRv[u], y1, PFv[v], PRv[v], y1, c); line(PFv[u], PRv[u], y0, PFv[v], PRv[v], y0, c); line(PFv[u], PRv[u], y0, PFv[u], PRv[u], y1, c); }
+}
+let eyeY = EYE, lastKey = '', bob = 0;
+const GHOST = 1.0;
+function buildSlice() {
+  readFrame(); nTri = 0; nLine = 0;
+  for (const b of L.boxes) {
+    const [lo, hi] = sRange(b);
+    if (lo < 0 && hi > 0) { const n = cutBox(b, 0); if (n >= 3) emitPrism(b, n); }
+    if (b.kind === 'floor') continue;
+    for (const off of [GHOST, -GHOST]) {
+      if (lo < off && hi > off && !(lo < 0 && hi > 0)) { const n = cutBox(b, off); if (n >= 3) emitGhost(b, n, off > 0 ? C_ANA : C_KATA); }
+    }
+  }
+  geo.setDrawRange(0, nTri * 3); aPos.needsUpdate = aNor.needsUpdate = a4.needsUpdate = aAx.needsUpdate = aCol.needsUpdate = true;
+  lgeo.setDrawRange(0, nLine * 2); lPos.needsUpdate = lCol.needsUpdate = true;
+}
+/* local coordinates of a 4D point: forward, right, ana, height above eye */
+function local(p) { const dx = p[0] - P[0], dz = p[2] - P[2], dw = p[3] - P[3]; return [dx * F[0] + dz * F[1] + dw * F[2], dx * R[0] + dz * R[1] + dw * R[2], dx * A[0] + dz * A[1] + dw * A[2], p[1] - eyeY]; }
+function placeBall(mesh, ghost, p, R4, time, spin) {
+  const [f, r, a, y] = local(p), aa = Math.abs(a);
+  if (aa < R4) { const rr = Math.sqrt(R4 * R4 - a * a); mesh.visible = true; mesh.position.set(r, y, -f); mesh.scale.setScalar(rr); }
+  else mesh.visible = false;
+  if (ghost) { const g = aa >= R4 && aa < R4 + 2.2; ghost.visible = g; if (g) { ghost.position.set(r, y, -f); ghost.scale.setScalar(0.22 + 0.1 * Math.sin(time * 3)); ghost.rotation.y = spin; ghost.material.color.set(a > 0 ? COL.ana : COL.kata); } }
+  return [f, r, a, y];
+}
+
+/* ============================================================
+   3D map of the horizontal space: x, z, w (W drawn upward)
+   ============================================================ */
+const mapScene = new THREE.Scene(), mapCam = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+const toMap = (x, z, w) => new THREE.Vector3(x, w, -z);
+let mapStatic = null;
+const mapPlayer = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), new THREE.MeshBasicMaterial({ color: COL.exit })); mapScene.add(mapPlayer);
+const mapSlice = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: COL.exit, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false })); mapSlice.matrixAutoUpdate = false; mapScene.add(mapSlice);
+const mapSliceEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: COL.exit, transparent: true, opacity: 0.8 })); mapSliceEdge.matrixAutoUpdate = false; mapScene.add(mapSliceEdge);
+const mapArrows = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ vertexColors: true })); mapScene.add(mapArrows);
+{ const g = mapArrows.geometry; g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(18), 3)); const c = new Float32Array(18); const cs = [new THREE.Color('#ffffff'), new THREE.Color('#7d86a8'), new THREE.Color(COL.ana)]; cs.forEach((cc, i) => { for (let j = 0; j < 2; j++) { c[i * 6 + j * 3] = cc.r; c[i * 6 + j * 3 + 1] = cc.g; c[i * 6 + j * 3 + 2] = cc.b; } }); g.setAttribute('color', new THREE.BufferAttribute(c, 3)); }
+const mapOrbs = [], mapExit = new THREE.Mesh(new THREE.OctahedronGeometry(0.55), new THREE.MeshBasicMaterial({ color: COL.exit, wireframe: true })); mapScene.add(mapExit);
+for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 8), new THREE.MeshBasicMaterial({ color: COL.orb })); m.visible = false; mapScene.add(m); mapOrbs.push(m); }
+let mapAz = 0.6, mapExtent = 20, mapSmall = coarse, mapCenter = new THREE.Vector3();
+const MAPBG = new THREE.Color('#0C101E');
+function buildMapStatic() {
+  if (mapStatic) { mapScene.remove(mapStatic); mapStatic.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  mapStatic = new THREE.Group();
+  const E = [], Fp = [], Fc = [], fl = L.boxes.find(b => b.kind === 'floor');
+  const pushBox = (b, faces, col) => {
+    const xs = [b.lo[0], b.hi[0]], zs = [b.lo[2], b.hi[2]], ws = [b.lo[3], b.hi[3]], v = [];
+    for (let c = 0; c < 8; c++) v.push(toMap(xs[c & 1], zs[(c >> 1) & 1], ws[(c >> 2) & 1]));
+    for (let c = 0; c < 8; c++) for (let k = 0; k < 3; k++) if (!((c >> k) & 1)) { const d = c | (1 << k); E.push(v[c].x, v[c].y, v[c].z, v[d].x, v[d].y, v[d].z); }
+    if (faces) { const quads = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 1, 5, 4], [2, 3, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5]]; quads.forEach(q => { [[q[0], q[1], q[2]], [q[0], q[2], q[3]]].forEach(t => t.forEach(i => { Fp.push(v[i].x, v[i].y, v[i].z); Fc.push(col.r, col.g, col.b); })); }); }
+  };
+  L.boxes.forEach(b => { if (b.kind === 'floor' || b.kind === 'edge') return; if (b.hi[1] < 0.5) { pushBox(b, true, new THREE.Color(COL.plat)); return; } pushBox(b, true, new THREE.Color(b.kind === 'pillar' ? COL.pillar : COL.wall)); });
+  const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.Float32BufferAttribute(E, 3));
+  mapStatic.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: '#9aa3d6', transparent: true, opacity: 0.55 })));
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(Fp, 3)); fg.setAttribute('color', new THREE.Float32BufferAttribute(Fc, 3));
+  mapStatic.add(new THREE.Mesh(fg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide })));
+  // the walkable region: the floor drawn as a wire cuboid with axis arrows
+  const fb = { lo: fl.lo, hi: fl.hi }, E2 = [], xs = [fb.lo[0], fb.hi[0]], zs = [fb.lo[2], fb.hi[2]], ws = [fb.lo[3], fb.hi[3]], v = [];
+  for (let c = 0; c < 8; c++) v.push(toMap(xs[c & 1], zs[(c >> 1) & 1], ws[(c >> 2) & 1]));
+  for (let c = 0; c < 8; c++) for (let k = 0; k < 3; k++) if (!((c >> k) & 1)) { const d = c | (1 << k); E2.push(v[c].x, v[c].y, v[c].z, v[d].x, v[d].y, v[d].z); }
+  const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(E2, 3));
+  mapStatic.add(new THREE.LineSegments(g2, new THREE.LineBasicMaterial({ color: '#5a6290' })));
+  const o = v[0], axisLine = (to, col) => { const g = new THREE.BufferGeometry().setFromPoints([o, to]); mapStatic.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: col }))); };
+  axisLine(v[1], AXC[0]); axisLine(v[2], AXC[2]); axisLine(v[4], AXC[3]);
+  mapStatic.userData.axisEnds = [v[1], v[2], v[4]];
+  mapScene.add(mapStatic);
+  mapExtent = Math.max(fb.hi[0] - fb.lo[0], fb.hi[2] - fb.lo[2], fb.hi[3] - fb.lo[3]);
+  mapCenter = toMap((fb.lo[0] + fb.hi[0]) / 2, (fb.lo[2] + fb.hi[2]) / 2, (fb.lo[3] + fb.hi[3]) / 2);
+}
+const mapLabelEls = ['X', 'Z', 'W'].map((t, i) => { const s = document.createElement('span'); s.className = 'mlab'; s.textContent = t; s.style.color = [AXC[0], AXC[2], AXC[3]][i]; $('#mapLabels').appendChild(s); return s; });
+function updateMap(time) {
+  const pm = toMap(P[0], P[2], P[3]);
+  mapPlayer.position.copy(pm);
+  const Fm = toMap(F[0], F[1], F[2]), Rm = toMap(R[0], R[1], R[2]), Am = toMap(A[0], A[1], A[2]);
+  const s = Math.min(10, mapExtent * 0.45), M = new THREE.Matrix4().makeBasis(Rm.clone().multiplyScalar(s), Fm.clone().multiplyScalar(s), Am); M.setPosition(pm);
+  mapSlice.matrix.copy(M); mapSliceEdge.matrix.copy(M);
+  const ap = mapArrows.geometry.attributes.position, arr = ap.array, len = Math.max(2, mapExtent * 0.14);
+  [Fm, Rm, Am].forEach((v, i) => { arr[i * 6] = pm.x; arr[i * 6 + 1] = pm.y; arr[i * 6 + 2] = pm.z; arr[i * 6 + 3] = pm.x + v.x * len; arr[i * 6 + 4] = pm.y + v.y * len; arr[i * 6 + 5] = pm.z + v.z * len; });
+  ap.needsUpdate = true;
+  L.orbs.forEach((o, i) => { mapOrbs[i].visible = !ST.got[i]; mapOrbs[i].position.copy(toMap(o[0], o[2], o[3])); });
+  for (let i = L.orbs.length; i < 6; i++) mapOrbs[i].visible = false;
+  mapExit.position.copy(toMap(L.exit[0], L.exit[2], L.exit[3])); mapExit.rotation.y = time; mapExit.material.color.set(ST.exitOpen ? COL.exit : '#6d6890');
+  // heading-up: the camera sits behind the player's forward direction
+  const hx = Fm.x, hz = Fm.z; if (Math.hypot(hx, hz) > 0.25) { const target = Math.atan2(-hx, -hz); let d = target - mapAz; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; mapAz += d * 0.06; }
+  const dist = mapExtent * 2.05, tc = mapCenter.clone().lerp(pm, 0.35);
+  mapCam.position.set(tc.x + Math.sin(mapAz) * dist * 0.8, tc.y + dist * 0.6, tc.z + Math.cos(mapAz) * dist * 0.8);
+  mapCam.lookAt(tc);
+}
+
+/* ============================================================
+   Physics: an axis-aligned 4D body against axis-aligned 4D boxes
+   ============================================================ */
+function overlaps(b, px, py, pz, pw) {
+  return px + RAD > b.lo[0] && px - RAD < b.hi[0] && py + BODY > b.lo[1] && py < b.hi[1] && pz + RAD > b.lo[2] && pz - RAD < b.hi[2] && pw + RAD > b.lo[3] && pw - RAD < b.hi[3];
+}
+let lastBlock = null;
+function moveAxis(ax, d) {
+  if (!d) return false;
+  P[ax] += d; let hit = false;
+  for (const b of L.boxes) {
+    if (!overlaps(b, P[0], P[1], P[2], P[3])) continue;
+    hit = true; lastBlock = b;
+    if (ax === 1) { if (d < 0) { P[1] = b.hi[1]; } else { P[1] = b.lo[1] - BODY - 1e-4; } }
+    else { const half = RAD; P[ax] = d > 0 ? b.lo[ax] - half - 1e-4 : b.hi[ax] + half + 1e-4; }
+  }
+  return hit;
+}
+
+/* ============================================================
+   Input
+   ============================================================ */
+const K = {}; const hold = {}; let joy = { x: 0, y: 0 }, mouseDrag = null, rightDrag = false;
+const KEYMAP = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyE', 'KeyQ', 'KeyC', 'KeyZ', 'KeyR', 'KeyF', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight', 'Space'];
+let jumpReq = false, playing = false;
+window.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.code === 'KeyH') { e.preventDefault(); toggleHelp(); return; }
+  if (!playing) { if (e.code === 'Enter' && !$('#help').hidden) { e.preventDefault(); play(); } return; }
+  if (KEYMAP.includes(e.code)) { K[e.code] = true; e.preventDefault(); }
+  if (e.code === 'Space') jumpReq = true;
+  if (e.code === 'KeyX') startAlign();
+  if (e.code === 'KeyM') toggleMap();
+});
+window.addEventListener('keyup', e => { K[e.code] = false; });
+window.addEventListener('blur', () => { Object.keys(K).forEach(k => { K[k] = false; }); });
+const locked = () => document.pointerLockElement === canvas;
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('mousedown', e => {
+  if (!playing) return;
+  if (e.button === 2) rightDrag = true;
+  if (!locked() && !coarse) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {} }
+  mouseDrag = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('mouseup', e => { if (e.button === 2) rightDrag = false; mouseDrag = null; });
+function look(dx, dy) {
+  if (rightDrag) { rotH(0, 2, dx * 0.0032); ST.turn4 += Math.abs(dx * 0.0032); }
+  else rotH(0, 1, dx * 0.0026);
+  pitch = Math.max(-1.45, Math.min(1.45, pitch - dy * 0.0024));
+  dirty = true;
+}
+let lockAt = 0;
+window.addEventListener('mousemove', e => {
+  if (!playing) return;
+  if (locked()) { const dx = e.movementX || 0, dy = e.movementY || 0; if (performance.now() - lockAt < 120 || Math.abs(dx) > 220 || Math.abs(dy) > 220) return; look(dx, dy); }
+  else if (mouseDrag && !coarse) { look(e.clientX - mouseDrag.x, e.clientY - mouseDrag.y); mouseDrag = { x: e.clientX, y: e.clientY }; }
+});
+document.addEventListener('pointerlockchange', () => { lockAt = performance.now(); $('#lockHint').hidden = !playing || locked() || coarse; });
+/* touch */
+const touchLook = {};
+canvas.addEventListener('touchstart', e => { for (const t of e.changedTouches) if (t.clientX > window.innerWidth * 0.4) touchLook[t.identifier] = { x: t.clientX, y: t.clientY }; }, { passive: true });
+canvas.addEventListener('touchmove', e => { for (const t of e.changedTouches) { const s = touchLook[t.identifier]; if (!s) continue; look((t.clientX - s.x) * 1.5, (t.clientY - s.y) * 1.5); s.x = t.clientX; s.y = t.clientY; } e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchend', e => { for (const t of e.changedTouches) delete touchLook[t.identifier]; });
+const joyEl = $('#joy'), knob = $('#knob'); let joyId = null;
+joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); });
+joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = e => { if (e.pointerId !== joyId) return; joyId = null; joy = { x: 0, y: 0 }; knob.style.transform = ''; };
+joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+function joyMove(e) { const r = joyEl.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2; let dx = (e.clientX - cx) / (r.width / 2), dy = (e.clientY - cy) / (r.height / 2); const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; } joy = { x: dx, y: -dy }; knob.style.transform = `translate(${dx * 36}px,${dy * 36}px)`; }
+$$('[data-hold]').forEach(b => { const k = b.dataset.hold; const on = e => { e.preventDefault(); hold[k] = true; b.classList.add('on'); }; const off = () => { hold[k] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointerleave', off); b.addEventListener('pointercancel', off); });
+$$('[data-tap]').forEach(b => b.addEventListener('click', () => { if (b.dataset.tap === 'jump') jumpReq = true; else startAlign(); }));
+
+/* ============================================================
+   UI
+   ============================================================ */
+function toast(msg, kind, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.className = 'toast' + (kind ? ' ' + kind : ''); t.hidden = false; clearTimeout(toast.tm); toast.tm = setTimeout(() => { t.hidden = true; }, ms); }
+function toggleMap() { mapSmall = !mapSmall; $('#mapBox').classList.toggle('small', mapSmall); }
+function toggleHelp() { const h = $('#help'); if (h.hidden) { playing = false; h.hidden = false; try { document.exitPointerLock(); } catch (_) {} $('#bPlay').textContent = 'Продолжить'; $('#lockHint').hidden = true; } else play(); }
+function play() {
+  $('#help').hidden = true; $('#levels').hidden = true; playing = true; last = performance.now();
+  if (!coarse) { try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => { $('#lockHint').hidden = false; }); } catch (_) {} }
+  $('#lockHint').hidden = coarse || locked();
+  setTimeout(() => { $('#lockHint').hidden = !playing || coarse || locked(); }, 300);
+}
+function openLevels() {
+  playing = false; try { document.exitPointerLock(); } catch (_) {}
+  const list = $('#lvList'); list.innerHTML = '';
+  LEVELS.forEach((lv, i) => { const b = document.createElement('button'); let best = null; try { best = JSON.parse(localStorage.getItem('ana.v1') || '{}')[i]; } catch (_) {}
+    b.innerHTML = `<span class="n">${i + 1}</span><b>${lv.name}</b><span class="t">${best ? 'пройден · ' + clock(best) : ''}</span><small>${lv.sub}</small>`; b.setAttribute('aria-current', String(i === LI));
+    b.addEventListener('click', () => { loadLevel(i); play(); }); list.appendChild(b); });
+  $('#levels').hidden = false; $('#help').hidden = true;
+}
+const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+$('#bPlay').addEventListener('click', play);
+$('#bHelp').addEventListener('click', toggleHelp);
+$('#bHelpLevels').addEventListener('click', openLevels);
+$('#bLevels').addEventListener('click', openLevels);
+$('#bLvClose').addEventListener('click', () => { $('#levels').hidden = true; play(); });
+$('#bAlign').addEventListener('click', startAlign);
+$('#bMap').addEventListener('click', toggleMap);
+$('#bAgain').addEventListener('click', () => { loadLevel(LI); play(); });
+$('#bNext').addEventListener('click', () => { loadLevel(Math.min(LEVELS.length - 1, LI + 1)); play(); });
+if (coarse) { $('#touch').hidden = false; $('#touchNote').hidden = false; $('#keysDesk').hidden = true; $('#mapBox').classList.add('small'); }
+
+const TUT = [
+  'Идите вперёд (W) к светящейся сфере. Мышь поворачивает взгляд.',
+  'Следующая сфера в 5 метрах в сторону ана: её не видно, она вне вашего среза. Держите E и следите за радаром — ножка сферы укоротится.',
+  'Последняя сфера в стороне ката и позади. Повернитесь в 4D: держите Z (или правую кнопку мыши и ведите влево), пока сфера не окажется на радаре впереди. Потом идите.',
+  'Все сферы собраны, портал открыт. Идите к нему.'
+];
+function updateObjective() {
+  const n = L.orbs.length, got = ST.got.filter(Boolean).length;
+  let txt = L.tutorial ? TUT[Math.min(got, 3)] : (got < n ? `${L.text}` : 'Все сферы собраны. Портал открыт: найдите его по радару.');
+  $('#hudObj').textContent = txt;
+  $('#hudOrbs').innerHTML = L.orbs.map((o, i) => `<i class="${ST.got[i] ? 'got' : ''}"></i>`).join('');
+}
+function loadLevel(i) {
+  LI = i; L = LEVELS[i].make();
+  P[0] = L.start[0]; P[1] = L.start[1]; P[2] = L.start[2]; P[3] = L.start[3]; setFace(L.face); pitch = -0.05; vy = 0; grounded = false;
+  ST.got = L.orbs.map(() => false); ST.time = 0; ST.dist = 0; ST.distAna = 0; ST.turn4 = 0; ST.jumps = 0; ST.done = false; ST.exitOpen = false; alignT = null;
+  uni.uWlo.value = L.wlo; uni.uWhi.value = L.whi;
+  $('#hudLvl').textContent = `Уровень ${i + 1} из ${LEVELS.length}`; $('#hudName').textContent = L.name;
+  $('#done').hidden = true;
+  buildMapStatic(); updateObjective(); dirty = true;
+}
+function finish() {
+  ST.done = true; playing = false; try { document.exitPointerLock(); } catch (_) {}
+  try { const s = JSON.parse(localStorage.getItem('ana.v1') || '{}'); if (!s[LI] || ST.time < s[LI]) { s[LI] = ST.time; localStorage.setItem('ana.v1', JSON.stringify(s)); } } catch (_) {}
+  $('#doneTitle').textContent = L.name; $('#sTime').textContent = clock(ST.time); $('#sDist').textContent = `${Math.round(ST.dist)} м`; $('#sAna').textContent = `${Math.round(ST.distAna)} м`;
+  $('#sTurn').textContent = `${Math.round(ST.turn4 * 180 / Math.PI)}°`; $('#sJump').textContent = ST.jumps; $('#sOrbs').textContent = L.orbs.length;
+  const share = ST.dist > 0 ? Math.round(100 * ST.distAna / ST.dist) : 0;
+  $('#doneNote').textContent = `${share}% пути вы прошли в направлениях, которых в нашем мире нет.` + (LI === LEVELS.length - 1 ? ' Следующий случайный лабиринт будет другим.' : '');
+  $('#bNext').textContent = LI >= LEVELS.length - 1 ? 'Новый лабиринт' : 'Следующий уровень';
+  $('#done').hidden = false;
+}
+
+/* radar: the ellipse is your slice (forward up, right to the right); stems show ana (up) and kata (down) */
+const scan = $('#scan'), sctx = scan.getContext('2d');
+function drawScan(items) {
+  const r = scan.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2), W = Math.round(r.width * d), Hh = Math.round(r.height * d);
+  if (scan.width !== W || scan.height !== Hh) { scan.width = W; scan.height = Hh; }
+  const g = sctx; g.setTransform(d, 0, 0, d, 0, 0); const w = r.width, h = r.height; g.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h * 0.55, rx = w * 0.44, ry = h * 0.26, RANGE = 25;
+  g.strokeStyle = 'rgba(150,165,210,.35)'; g.lineWidth = 1;
+  for (const k of [1, 0.6, 0.3]) { g.beginPath(); g.ellipse(cx, cy, rx * k, ry * k, 0, 0, Math.PI * 2); g.stroke(); }
+  g.beginPath(); g.moveTo(cx - rx, cy); g.lineTo(cx + rx, cy); g.moveTo(cx, cy - ry); g.lineTo(cx, cy + ry); g.stroke();
+  g.fillStyle = 'rgba(150,165,210,.08)'; g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#E2D9FF'; g.beginPath(); g.moveTo(cx, cy - 6); g.lineTo(cx - 4.5, cy + 4); g.lineTo(cx + 4.5, cy + 4); g.closePath(); g.fill();
+  const sorted = items.slice().sort((a, b) => b.f - a.f);
+  sorted.forEach(it => {
+    const dh = Math.hypot(it.f, it.r) || 1e-6, k = Math.min(1, dh / RANGE) ** 0.7, px = cx + (it.r / dh) * k * rx, py = cy - (it.f / dh) * k * ry;
+    const sa = Math.max(-1, Math.min(1, it.a / 12)), stem = -sa * h * 0.38, inS = Math.abs(it.a) < it.rad;
+    const col = it.exit ? COL.exit : inS ? COL.orb : it.a > 0 ? COL.ana : COL.kata;
+    g.strokeStyle = col; g.lineWidth = 1.6; g.beginPath(); g.moveTo(px, py); g.lineTo(px, py + stem); g.stroke();
+    g.fillStyle = 'rgba(150,165,210,.6)'; g.beginPath(); g.ellipse(px, py, 3, 1.4, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = col; g.beginPath();
+    if (it.exit) { const s = 5.5; g.moveTo(px, py + stem - s); g.lineTo(px + s, py + stem); g.lineTo(px, py + stem + s); g.lineTo(px - s, py + stem); g.closePath(); if (ST.exitOpen) g.fill(); else { g.lineWidth = 1.4; g.stroke(); } }
+    else { g.arc(px, py + stem, it.main ? 5 : 3.8, 0, Math.PI * 2); g.fill(); }
+  });
+  g.font = `500 10px ${getComputedStyle(document.body).getPropertyValue('--font-mono') || 'monospace'}`; g.fillStyle = 'rgba(150,165,210,.8)'; g.textAlign = 'center';
+  g.fillText('вперёд', cx, cy - ry - 4); g.textAlign = 'left'; g.fillStyle = COL.ana; g.fillText('↑ ана', 4, 12); g.fillStyle = COL.kata; g.fillText('↓ ката', 4, h - 5);
+}
+function updateHUD(items) {
+  drawScan(items);
+  const main = items.find(i => i.main);
+  if (main) {
+    const cl = main.a > 0.3 ? 'ana' : main.a < -0.3 ? 'kata' : '';
+    $('#tgt').innerHTML = `${main.exit ? 'Портал' : 'Ближайшая сфера'}: вперёд <b>${fmt(main.f)}</b> · вправо <b>${fmt(main.r)}</b> · ${main.a >= 0 ? 'ана' : 'ката'} <b class="${cl}">${fmt(Math.abs(main.a))}</b> м`;
+  }
+  const f2 = [F[0] * F[0], F[1] * F[1], F[2] * F[2]], cols = [AXC[0], AXC[2], AXC[3]], names = ['X', 'Z', 'W'];
+  $('#fbar').innerHTML = f2.map((v, i) => `<span style="width:${(v * 100).toFixed(1)}%;background:${cols[i]}"></span>`).join('');
+  const parts = f2.map((v, i) => [v, i]).filter(p => p[0] > 0.04).sort((a, b) => b[0] - a[0]).map(([v, i]) => `${F[i] >= 0 ? '+' : '−'}${names[i]} ${Math.round(v * 100)}%`);
+  $('#fText').textContent = 'взгляд: ' + parts.join(' · ');
+  $('#pText').textContent = `x ${fmt(P[0])} z ${fmt(P[2])} w ${fmt(P[3])}`;
+}
+
+/* ============================================================
+   Loop
+   ============================================================ */
+let dirty = true, last = performance.now(), hudT = 0, wasGround = false;
+function resize() { const w = game.clientWidth, h = game.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(game);
+function step(dt) {
+  // turning
+  const yawK = (K.ArrowRight ? 1 : 0) - (K.ArrowLeft ? 1 : 0);
+  const t4 = (K.KeyC || hold.turnA ? 1 : 0) - (K.KeyZ || hold.turnK ? 1 : 0), tw = (K.KeyR ? 1 : 0) - (K.KeyF ? 1 : 0);
+  if (yawK) { rotH(0, 1, yawK * 2.0 * dt); dirty = true; }
+  if (t4) { rotH(0, 2, t4 * 1.5 * dt); ST.turn4 += 1.5 * dt; dirty = true; }
+  if (tw) { rotH(1, 2, tw * 1.5 * dt); ST.turn4 += 1.5 * dt; dirty = true; }
+  if (alignT) {
+    alignT.t = Math.min(1, alignT.t + dt / 0.45); const e = alignT.t * alignT.t * (3 - 2 * alignT.t);
+    for (let k = 0; k < 9; k++) H[k] = alignT.from[k] + (alignT.to[k] - alignT.from[k]) * e;
+    orthoH(); dirty = true; if (alignT.t >= 1) { H.set(alignT.to); alignT = null; }
+  } else if (yawK || t4 || tw) orthoH();
+  // walking in the frame (forward, right, ana)
+  let mf = (K.KeyW || K.ArrowUp ? 1 : 0) - (K.KeyS || K.ArrowDown ? 1 : 0) + joy.y, mr = (K.KeyD ? 1 : 0) - (K.KeyA ? 1 : 0) + joy.x, ma = (K.KeyE || hold.ana ? 1 : 0) - (K.KeyQ || hold.kata ? 1 : 0);
+  const ml = Math.hypot(mf, mr, ma); if (ml > 1) { mf /= ml; mr /= ml; ma /= ml; }
+  const sp = (K.ShiftLeft || K.ShiftRight ? 5.8 : 3.4);
+  const vx = (mf * H[0] + mr * H[3] + ma * H[6]) * sp, vz = (mf * H[1] + mr * H[4] + ma * H[7]) * sp, vw = (mf * H[2] + mr * H[5] + ma * H[8]) * sp;
+  const before = [P[0], P[2], P[3]];
+  const hx = moveAxis(0, vx * dt), hz = moveAxis(2, vz * dt), hw = moveAxis(3, vw * dt);
+  const moved = Math.hypot(P[0] - before[0], P[2] - before[1], P[3] - before[2]);
+  if (moved > 0) { ST.dist += moved; const da = (P[0] - before[0]) * H[6] + (P[2] - before[1]) * H[7] + (P[3] - before[2]) * H[8]; ST.distAna += Math.abs(da); dirty = true; if (!reduce && grounded) bob += moved * 2.4; }
+  if ((hx || hz || hw) && ma && lastBlock && Math.abs(ma) > 0.5 && !toast.recent) { toast.recent = true; setTimeout(() => { toast.recent = false; }, 2500); toast(ma > 0 ? 'Что-то мешает пройти в ана. Оранжевый контур показывает это препятствие.' : 'Что-то мешает пройти в ката. Синий контур показывает это препятствие.', 'warn', 2400); }
+  // gravity and jumps
+  if (jumpReq && grounded) { vy = 5.3; ST.jumps++; }
+  jumpReq = false;
+  vy -= 15 * dt; const yb = P[1];
+  grounded = false;
+  if (moveAxis(1, vy * dt)) { if (vy < 0) grounded = true; vy = 0; }
+  if (P[1] !== yb) dirty = true;
+  if (P[1] < -18) { P[0] = L.start[0]; P[1] = L.start[1]; P[2] = L.start[2]; P[3] = L.start[3]; vy = 0; toast('Вы выпали за край мира. Возвращаем к началу.', 'warn'); dirty = true; }
+  // pickups
+  const c = [P[0], P[1] + 0.9, P[2], P[3]];
+  L.orbs.forEach((o, i) => { if (ST.got[i]) return; const d = Math.hypot(o[0] - c[0], o[1] - c[1], o[2] - c[2], o[3] - c[3]); if (d < 1.0) { ST.got[i] = true; const left = ST.got.filter(x => !x).length; if (!left) { ST.exitOpen = true; toast('Все сферы собраны. Портал открыт!', 'good'); } else toast(`Сфера! Осталось ${left}`, 'good'); updateObjective(); } });
+  if (ST.exitOpen && !ST.done) { const e = L.exit, d = Math.hypot(e[0] - c[0], e[1] - c[1], e[2] - c[2], e[3] - c[3]); if (d < 1.1) finish(); }
+  else if (!ST.exitOpen) { const e = L.exit, d = Math.hypot(e[0] - c[0], e[1] - c[1], e[2] - c[2], e[3] - c[3]); if (d < 1.1 && !toast.recent2) { toast.recent2 = true; setTimeout(() => { toast.recent2 = false; }, 3000); toast('Портал откроется, когда вы соберёте все сферы.'); } }
+  ST.time += dt;
+}
+function tick(now) {
+  requestAnimationFrame(tick);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; const time = now / 1000;
+  if (!L) return;
+  if (playing && !ST.done) step(dt);
+  eyeY = P[1] + EYE + (reduce ? 0 : Math.sin(bob) * 0.035);
+  if (dirty) { buildSlice(); dirty = false; }
+  else readFrame();
+  camera.rotation.set(pitch, 0, 0);
+  // light: a fixed 4D direction, re-expressed in the slice
+  const Lw = [0.35, 0.82, 0.22, 0.4], lf = Lw[0] * F[0] + Lw[2] * F[1] + Lw[3] * F[2], lr = Lw[0] * R[0] + Lw[2] * R[1] + Lw[3] * R[2];
+  uni.uLight.value.set(lr, Lw[1], -lf).normalize(); dirL.position.copy(uni.uLight.value);
+  // orbs and the portal: 4D balls, their slices are spheres
+  const items = [];
+  L.orbs.forEach((o, i) => {
+    if (ST.got[i]) { orbMeshes[i].visible = orbGhosts[i].visible = false; return; }
+    const [f, r, a] = placeBall(orbMeshes[i], orbGhosts[i], o, 0.45, time, time);
+    items.push({ f, r, a, rad: 0.45, d: Math.hypot(f, r, a) });
+  });
+  for (let i = L.orbs.length; i < 6; i++) orbMeshes[i].visible = orbGhosts[i].visible = false;
+  const [ef, er, ea, ey] = placeBall(exitMesh, exitGhost, L.exit, 1.0, time, time);
+  exitRing.visible = exitMesh.visible; exitRing.position.copy(exitMesh.position); exitRing.scale.copy(exitMesh.scale).multiplyScalar(1.15); exitRing.rotation.set(time * 0.7, time, 0);
+  exitMat.emissiveIntensity = ST.exitOpen ? 0.9 + 0.3 * Math.sin(time * 4) : 0.15; exitMat.opacity = ST.exitOpen ? 0.6 : 0.28;
+  const exitItem = { f: ef, r: er, a: ea, rad: 1.0, exit: true, d: Math.hypot(ef, er, ea) };
+  items.push(exitItem);
+  const targets = items.filter(i => !i.exit || ST.exitOpen); let best = null; targets.forEach(t => { if (!best || t.d < best.d) best = t; }); if (best) best.main = true;
+  orbMat.emissiveIntensity = 0.65 + 0.25 * Math.sin(time * 3);
+  renderer.setViewport(0, 0, game.clientWidth, game.clientHeight); renderer.setScissorTest(false); renderer.clear();
+  renderer.render(scene, camera);
+  // map in the bottom-right panel
+  const mb = $('#mapBox'), gr = game.getBoundingClientRect(), r2 = mb.getBoundingClientRect();
+  const sm = mapSmall || coarse, mx = r2.left - gr.left + 6, my = gr.bottom - r2.bottom, mw = r2.width - 12, mh = r2.height - (sm ? 36 : 74);
+  if (mw > 20 && mh > 20) {
+    updateMap(time); mapCam.aspect = mw / mh; mapCam.updateProjectionMatrix();
+    renderer.setScissorTest(true);
+    renderer.setScissor(r2.left - gr.left, gr.bottom - r2.bottom, r2.width, r2.height); renderer.setClearColor(MAPBG, 0.9); renderer.clear(true, true, false);
+    renderer.setViewport(mx, my + (sm ? 6 : 44), mw, mh); renderer.setScissor(mx, my + (sm ? 6 : 44), mw, mh);
+    renderer.render(mapScene, mapCam); renderer.setScissorTest(false); renderer.setClearColor(0x000000, 0);
+    const ends = mapStatic.userData.axisEnds, v = new THREE.Vector3();
+    ends.forEach((e, i) => { v.copy(e).project(mapCam); const inside = v.z < 1 && Math.abs(v.x) < 1.05 && Math.abs(v.y) < 1.05; mapLabelEls[i].hidden = !inside; if (inside) { mapLabelEls[i].style.left = (mx + (v.x + 1) / 2 * mw) + 'px'; mapLabelEls[i].style.top = (gr.height - (my + (sm ? 6 : 44)) - (v.y + 1) / 2 * mh) + 'px'; } });
+  }
+  hudT -= dt; if (hudT <= 0) { hudT = 0.08; updateHUD(items); }
+}
+
+/* ---------- boot (keeps the level and position across live updates) ---------- */
+function start(data) {
+  data = data || {};
+  loadLevel(Number.isInteger(data.li) && data.li >= 0 && data.li < LEVELS.length - 1 ? data.li : 0);
+  if (data.P && data.H) { P.set(data.P); H.set(data.H); pitch = data.pitch || 0; ST.got = data.got || ST.got; ST.exitOpen = ST.got.every(Boolean); updateObjective(); }
+  resize(); requestAnimationFrame(tick);
+}
+window.claude?.hot?.snapshot?.(() => ({ li: LI, P: Array.from(P), H: Array.from(H), pitch, got: ST.got }));
+if (window.claude?.hot?.ready) window.claude.hot.ready(start); else start(window.claude?.hot?.data ?? {});
+window.__ana = { P, H, ST, get L() { return L; }, step, buildSlice, get tris() { return nTri; }, get lines() { return nLine; }, K, hold, startAlign, play };
+})();
+</script>
+
+</body>
+</html>
